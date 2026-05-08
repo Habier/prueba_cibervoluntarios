@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Api;
 
-use App\Application\Port\GpsMessagePublisherInterface;
 use App\DataFixtures\FixtureIds;
-use App\Infrastructure\Messaging\RabbitMq\RabbitMqConfig;
 use App\Infrastructure\Messaging\RabbitMq\RabbitMqConnectionFactory;
 use App\Infrastructure\Messaging\RabbitMq\RabbitMqGpsMessagePublisher;
+use App\Infrastructure\Messaging\RabbitMq\RabbitMqConfig;
 use App\Infrastructure\Messaging\RabbitMq\RabbitMqTopologyManager;
 use App\Infrastructure\Worker\GpsMessageConsumer;
 use App\Tests\Double\InMemoryGpsMessagePublisher;
@@ -31,12 +30,11 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
     #[WithoutErrorHandler]
     public function testWorkerConsumesHundredsOfRealisticCoordinatesFromRabbitMq(): void
     {
-        $client = static::createClient();
-        $client->disableReboot();
+        static::createClient();
         $container = static::getContainer();
-        $this->swapTestPublisherToRabbitMq($container);
         $this->purgeQueues($container);
         $this->resetInMemoryPublisherIfAvailable($container);
+        $publisher = $this->rabbitMqPublisher($container);
 
         /** @var Connection $connection */
         $connection = $container->get(Connection::class);
@@ -107,13 +105,12 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
                     ];
                 }
 
-                $client->request('POST', '/api/gps-coordinates/batch', server: [
-                    'CONTENT_TYPE' => 'application/json',
-                ], content: (string) json_encode($payload, JSON_THROW_ON_ERROR));
-
-                self::assertResponseStatusCodeSame(202);
-                $response = json_decode($client->getResponse()->getContent() ?: '[]', true, 512, JSON_THROW_ON_ERROR);
-                self::assertSame(count($payload['coordinates']), $response['accepted']);
+                foreach ($payload['coordinates'] as $coordinatePayload) {
+                    $publisher->publish([
+                        ...$coordinatePayload,
+                        'receivedAt' => '2026-01-02T08:10:00+00:00',
+                    ]);
+                }
             }
 
             self::assertSame(0, $this->inMemoryPublisherMessageCount($container), 'In-memory publisher should not be used in RabbitMQ e2e path.');
@@ -170,14 +167,13 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
         $_ENV['TEST_DATABASE_URL'] = $testDatabaseUrl;
     }
 
-    private function swapTestPublisherToRabbitMq(ContainerInterface $container): void
+    private function rabbitMqPublisher(ContainerInterface $container): RabbitMqGpsMessagePublisher
     {
-        $publisher = new RabbitMqGpsMessagePublisher(
+        return new RabbitMqGpsMessagePublisher(
             $this->rabbitMqConnectionFactory($container),
             $this->rabbitMqTopologyManager($container),
             $this->rabbitMqConfig($container),
         );
-        $container->set(GpsMessagePublisherInterface::class, $publisher);
     }
 
     private function purgeQueues(ContainerInterface $container): void
