@@ -73,6 +73,6 @@ final class ReadApiTest extends DatabaseTestCase
         self::assertResponseIsSuccessful();
         $data = json_decode($client->getResponse()->getContent() ?: '[]', true, 512, JSON_THROW_ON_ERROR);
         $items = $data['member'] ?? $data['hydra:member'] ?? $data;
-        self::assertCount(2, $items);
+        self::assertCount(3, $items);
     }
 }

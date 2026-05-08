@@ -24,7 +24,7 @@ final class AlertRulesConfigurationTest extends TestCase
         $alert = $rule->evaluate($this->createContext(latitude: 40.4, longitude: -3.7, speedKmh: 0.9));
 
         self::assertNotNull($alert);
-        self::assertSame('IDLE_TOO_LONG', $alert->typeCode);
+        self::assertSame('IDLE_TOO_LONG', $alert->alertTypeCode);
     }
 
     public function testIdleRuleDoesNotTriggerAtOrAboveConfiguredThreshold(): void
@@ -42,7 +42,7 @@ final class AlertRulesConfigurationTest extends TestCase
         $alert = $rule->evaluate($this->createContext(latitude: 41.1, longitude: -3.5, speedKmh: 20.0));
 
         self::assertNotNull($alert);
-        self::assertSame('GEOFENCE_BREACH', $alert->typeCode);
+        self::assertSame('GEOFENCE_BREACH', $alert->alertTypeCode);
     }
 
     public function testGeofenceRuleDoesNotTriggerWithinConfiguredBounds(): void
@@ -55,7 +55,7 @@ final class AlertRulesConfigurationTest extends TestCase
     private function createContext(float $latitude, float $longitude, float $speedKmh): AlertContext
     {
         return new AlertContext(new GpsCoordinate(
-            new VehicleId('11111111-1111-1111-1111-111111111111'),
+            new VehicleId('11111111-1111-4111-8111-111111111111'),
             new Latitude($latitude),
             new Longitude($longitude),
             new Speed($speedKmh),

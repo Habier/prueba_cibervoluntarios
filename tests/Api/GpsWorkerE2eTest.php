@@ -11,6 +11,7 @@ use App\Infrastructure\Messaging\RabbitMq\RabbitMqConnectionFactory;
 use App\Infrastructure\Messaging\RabbitMq\RabbitMqGpsMessagePublisher;
 use App\Infrastructure\Messaging\RabbitMq\RabbitMqTopologyManager;
 use App\Infrastructure\Worker\GpsMessageConsumer;
+use App\Tests\Double\InMemoryGpsMessagePublisher;
 use App\Tests\Support\DatabaseTestCase;
 use Doctrine\DBAL\Connection;
 use PHPUnit\Framework\Attributes\Group;
@@ -35,6 +36,7 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
         $container = static::getContainer();
         $this->swapTestPublisherToRabbitMq($container);
         $this->purgeQueues($container);
+        $this->resetInMemoryPublisherIfAvailable($container);
 
         /** @var Connection $connection */
         $connection = $container->get(Connection::class);
@@ -65,7 +67,7 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
                     // 0-99: Speed exceeded (sequence % 100 < 50 triggers alert)
                     // 100-199: Geofence breach (sequence % 100 between 50-99 triggers alert)
                     // 200-299: Idle (sequence % 100 between 0-49 triggers alert via low speed)
-                    $scenario = ($sequence / 100) | 0; // Which 100-block are we in
+                    $scenario = intdiv($sequence, 100); // Which 100-block are we in
                     $speedKmh = 78.0;
                     $latitude = 40.4168 + (($sequence % 10) * 0.001);
                     $longitude = -3.7038 - (($sequence % 10) * 0.001);
@@ -113,6 +115,9 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
                 $response = json_decode($client->getResponse()->getContent() ?: '[]', true, 512, JSON_THROW_ON_ERROR);
                 self::assertSame(count($payload['coordinates']), $response['accepted']);
             }
+
+            self::assertGreaterThan(0, $this->countQueueMessages($container, $this->rabbitMqConfig($container)->queue), 'Messages should be published to RabbitMQ queue before worker consumption.');
+            self::assertSame(0, $this->inMemoryPublisherMessageCount($container), 'In-memory publisher should not be used in RabbitMQ e2e path.');
 
             $consumer->consume(maxIdleTimeouts: 3);
 
@@ -210,6 +215,34 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
         $factory = $container->get(RabbitMqConnectionFactory::class);
 
         return $factory;
+    }
+
+    private function resetInMemoryPublisherIfAvailable(ContainerInterface $container): void
+    {
+        if (!$container->has(InMemoryGpsMessagePublisher::class)) {
+            return;
+        }
+
+        $publisher = $container->get(InMemoryGpsMessagePublisher::class);
+        if (!$publisher instanceof InMemoryGpsMessagePublisher) {
+            return;
+        }
+
+        $publisher->reset();
+    }
+
+    private function inMemoryPublisherMessageCount(ContainerInterface $container): int
+    {
+        if (!$container->has(InMemoryGpsMessagePublisher::class)) {
+            return 0;
+        }
+
+        $publisher = $container->get(InMemoryGpsMessagePublisher::class);
+        if (!$publisher instanceof InMemoryGpsMessagePublisher) {
+            return 0;
+        }
+
+        return count($publisher->messages);
     }
 
     private function rabbitMqTopologyManager(ContainerInterface $container): RabbitMqTopologyManager
