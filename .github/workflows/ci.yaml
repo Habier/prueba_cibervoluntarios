@@ -18,7 +18,7 @@ jobs:
           php-version: '8.4'
           extensions: ctype, iconv, pdo_pgsql
 
-      - uses: ramsey/composer-install@v3
+      - uses: ramsey/composer-install@v4
 
       - name: Composer validate
         run: composer validate
@@ -60,7 +60,7 @@ jobs:
           php-version: '8.4'
           extensions: ctype, iconv, pdo_pgsql
 
-      - uses: ramsey/composer-install@v3
+      - uses: ramsey/composer-install@v4
 
       - name: PHPUnit
         run: vendor/bin/phpunit
