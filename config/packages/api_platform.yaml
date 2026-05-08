@@ -1,0 +1,13 @@
+api_platform:
+    title: IoT Logistics API
+    version: 1.0.0
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+    formats:
+        json:
+            mime_types: ['application/json']
+    docs_formats:
+        jsonopenapi: ['application/vnd.openapi+json']
+        jsonld: ['application/ld+json']
