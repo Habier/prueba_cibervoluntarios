@@ -49,9 +49,9 @@ final class AppFixtures extends Fixture
         $speedExceeded = $this->alertType(FixtureIds::ALERT_TYPE_SPEED, 'SPEED_EXCEEDED', 'Speed Exceeded', AlertSeverity::HIGH, $now);
         $geofenceBreach = $this->alertType(FixtureIds::ALERT_TYPE_GEOFENCE, 'GEOFENCE_BREACH', 'Geofence Breach', AlertSeverity::MEDIUM, $now);
 
-        $vehicleAlpha = $this->vehicle(FixtureIds::VEHICLE_ALPHA, 'AAA-111', $truck, $fleetNorth, VehicleStatus::ACTIVE, $now);
-        $vehicleBeta = $this->vehicle(FixtureIds::VEHICLE_BETA, 'BBB-222', $van, $fleetSouth, VehicleStatus::ACTIVE, $now);
-        $vehicleGamma = $this->vehicle(FixtureIds::VEHICLE_GAMMA, 'CCC-333', $electricVan, null, VehicleStatus::INACTIVE, $now);
+        $vehicleAlpha = $this->vehicle(FixtureIds::VEHICLE_1, 'AAA-111', $truck, $fleetNorth, VehicleStatus::ACTIVE, $now);
+        $vehicleBeta = $this->vehicle(FixtureIds::VEHICLE_2, 'BBB-222', $van, $fleetSouth, VehicleStatus::ACTIVE, $now);
+        $vehicleGamma = $this->vehicle(FixtureIds::VEHICLE_3, 'CCC-333', $electricVan, null, VehicleStatus::INACTIVE, $now);
 
         $lastPositionAlpha = new VehicleLastPositionRecord();
         $lastPositionAlpha->vehicle = $vehicleAlpha;
@@ -92,7 +92,7 @@ final class AppFixtures extends Fixture
         $manager->getConnection()->insert('gps_coordinates', [
             'id' => 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
             'external_id' => 'coord-1',
-            'vehicle_id' => FixtureIds::VEHICLE_ALPHA,
+            'vehicle_id' => FixtureIds::VEHICLE_1,
             'latitude' => 48.8566,
             'longitude' => 2.3522,
             'altitude' => 35.0,
@@ -105,7 +105,7 @@ final class AppFixtures extends Fixture
         $manager->getConnection()->insert('gps_coordinates', [
             'id' => 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
             'external_id' => 'coord-2',
-            'vehicle_id' => FixtureIds::VEHICLE_ALPHA,
+            'vehicle_id' => FixtureIds::VEHICLE_1,
             'latitude' => 48.8570,
             'longitude' => 2.3530,
             'altitude' => 36.0,

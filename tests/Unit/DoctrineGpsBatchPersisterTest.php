@@ -26,7 +26,7 @@ final class DoctrineGpsBatchPersisterTest extends DatabaseTestCase
         $connection = $entityManager->getConnection();
 
         $persister = new DoctrineGpsBatchPersister($connection, [new SpeedExceededRule(120)]);
-        $coordinate = new GpsCoordinate(new VehicleId(FixtureIds::VEHICLE_ALPHA), new Latitude(40.0), new Longitude(-3.0), new Speed(130.0), new DeviceTimestamp('2026-01-01T00:00:00+00:00'), new \DateTimeImmutable('2026-01-01T00:00:01+00:00'), 'dedupe-1', 10.0, 5.0);
+        $coordinate = new GpsCoordinate(new VehicleId(FixtureIds::VEHICLE_1), new Latitude(40.0), new Longitude(-3.0), new Speed(130.0), new DeviceTimestamp('2026-01-01T00:00:00+00:00'), new \DateTimeImmutable('2026-01-01T00:00:01+00:00'), 'dedupe-1', 10.0, 5.0);
         $initialGpsCount = (int) $connection->fetchOne('SELECT COUNT(*) FROM gps_coordinates');
         $initialAlertCount = (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts');
 

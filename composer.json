@@ -85,6 +85,9 @@
             "docker compose up -d database app",
             "docker compose exec app vendor/bin/phpunit"
         ],
+        "phpstan": "vendor/bin/phpstan analyse",
+        "ecs": "vendor/bin/ecs check",
+        "ecs:fix": "vendor/bin/ecs check --fix",
         "test:setup": "docker compose up -d database app",
         "auto-scripts": {
             "cache:clear": "symfony-cmd",

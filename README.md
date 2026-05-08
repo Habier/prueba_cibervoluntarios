@@ -1,6 +1,6 @@
-# IoT Logistics Backend
+# Backend de Logística IoT
 
-Symfony 7.4 / PHP 8.4 backend for high-throughput GPS ingestion in a logistics fleet context.
+Backend en Symfony 7.4 / PHP 8.4 para la ingesta de GPS de alto rendimiento en un contexto de flota logística.
 
 ## Stack
 
@@ -9,15 +9,15 @@ Symfony 7.4 / PHP 8.4 backend for high-throughput GPS ingestion in a logistics f
 - API Platform
 - FrankenPHP
 - PostgreSQL + TimescaleDB + PostGIS
-- RabbitMQ with durable queues and DLQ
+- RabbitMQ con colas duraderas y DLQ
 - Doctrine ORM + Doctrine DBAL
 - PHPUnit
 - Doctrine Fixtures Bundle
-- PHPStan level 8
+- PHPStan nivel 8
 - ECS + PHP-CS-Fixer
 - GitHub Actions
 
-## Run With Docker
+## Ejecutar con Docker
 
 ```bash
 docker compose up --build -d
@@ -25,129 +25,120 @@ docker compose exec app php bin/console doctrine:migrations:migrate --no-interac
 docker compose exec app php bin/console doctrine:fixtures:load --no-interaction
 ```
 
-## Run Workers
+## Ejecutar Workers
 
 ```bash
 docker compose exec worker-gps php bin/console app:gps:consume
 docker compose exec worker-alerts php bin/console app:alerts:consume
 ```
 
-## Tests And Quality
+## Tests y Calidad
 
 ```bash
-vendor/bin/phpstan analyse
-vendor/bin/ecs check
-vendor/bin/ecs check --fix
+composer phpstan
+composer ecs
+composer ecs:fix
 ```
 
-Production-like tests run on PostgreSQL/TimescaleDB, not SQLite.
-
-Local test database bootstrap:
+Ejecutar tests PHPUnit
 
 ```bash
 composer test
 ```
 
-If you only want to pre-start the required services without running the suite:
+Si quieres ejecutar `vendor/bin/phpunit` en el host en lugar de dentro de Docker, tu PHP local debe tener `pdo_pgsql` habilitado y la base de datos Docker debe estar expuesta en `127.0.0.1:55432`.
 
-```bash
-composer test:setup
-```
+## Arquitectura
 
-If you want to run `vendor/bin/phpunit` on the host instead of inside Docker, your local PHP must have `pdo_pgsql` enabled and the Docker database must be exposed on `127.0.0.1:55432`.
+El código se divide en `Domain`, `Application` e `Infrastructure`.
 
-## Architecture
+- **Domain** contiene value objects, enums para conceptos estables y reglas de alertas.
+- **Application** contiene comandos, puertos y servicios de orquestación.
+- **Infrastructure** contiene adaptadores de API Platform, entidades/repositorios de Doctrine, adaptadores de RabbitMQ, health checks y workers de consola.
 
-The code is split into `Domain`, `Application`, and `Infrastructure`.
+Es un diseño ligero inspirado en CQRS:
 
-- Domain contains value objects, enums for stable concepts, and alert rules.
-- Application contains commands, ports, and orchestration services.
-- Infrastructure contains API Platform adapters, Doctrine entities/repositories, RabbitMQ adapters, health checks, and console workers.
+- **Lado de escritura**: `POST /api/gps-coordinates` y `POST /api/gps-coordinates/batch` publican en RabbitMQ.
+- **Lado del worker**: `app:gps:consume` almacena mensajes en buffer, los persiste con DBAL, actualiza `vehicle_last_positions` y crea alertas.
+- **Lado de lectura**: los providers de API Platform leen proyecciones optimizadas y coordenadas históricas.
 
-This is a lightweight CQRS-inspired design:
+## Por qué PostgreSQL + TimescaleDB + PostGIS
 
-- Write side: `POST /api/gps-coordinates` and `POST /api/gps-coordinates/batch` publish to RabbitMQ.
-- Worker side: `app:gps:consume` buffers messages, persists them with DBAL, updates `vehicle_last_positions`, and creates alerts.
-- Read side: API Platform providers read optimized projections and historical coordinates.
+- PostgreSQL ofrece garantías transaccionales e indexación madura.
+- TimescaleDB se adapta a la ingesta de series temporales con alta carga de escritura.
+- PostGIS habilita consultas espaciales futuras y soporte para geofencing.
+- Una única hypertable `gps_coordinates` escala mejor que una tabla por vehículo porque el overhead operativo, el coste de planificación y la gestión de esquemas se mantienen acotados.
 
-## Why PostgreSQL + TimescaleDB + PostGIS
+## Por qué RabbitMQ en lugar de Redis
 
-- PostgreSQL gives transactional guarantees and mature indexing.
-- TimescaleDB fits append-heavy time-series GPS ingestion.
-- PostGIS enables future spatial queries and geofencing support.
-- A single `gps_coordinates` hypertable scales better than one table per vehicle because operational overhead, planning cost, and schema management stay bounded.
+- Se requieren colas duraderas, mensajes persistentes, enrutamiento de DLQ y semánticas explícitas de ACK/NACK para una ingesta sin pérdidas.
+- Redis puede añadirse como caché opcional, pero no como cola crítica principal.
 
-## Why RabbitMQ Instead Of Redis
+## Por qué `php-amqplib/php-amqplib`
 
-- Durable queues, persistent messages, DLQ routing, and explicit ACK/NACK semantics are required for no-loss ingestion.
-- Redis can be added as an optional cache, but not as the primary critical queue.
-
-## Why `php-amqplib/php-amqplib`
-
-The critical GPS worker does not use Symfony Messenger. It uses `php-amqplib` directly to control:
+El worker crítico de GPS no usa Symfony Messenger. Usa `php-amqplib` directamente para controlar:
 
 - `prefetch_count`
-- manual ACK after PostgreSQL commit
-- timeout-based flush
-- batch-size-based flush
-- DLQ publishing for invalid messages
+- ACK manual tras el commit de PostgreSQL
+- Flush basado en timeout
+- Flush basado en tamaño de batch
+- Publicación en DLQ para mensajes inválidos
 
-## Batch Strategy
+## Estrategia de Batch
 
-- HTTP ingestion accepts arrays and immediately publishes one persistent message per coordinate.
-- The worker buffers messages in memory.
-- Flush happens when `GPS_BATCH_SIZE` is reached or `GPS_FLUSH_TIMEOUT_MS` expires.
-- Inserts use a single multi-row SQL statement with `ON CONFLICT DO NOTHING`.
+- La ingesta HTTP acepta arrays y publica inmediatamente un mensaje persistente por coordenada.
+- El worker almacena mensajes en memoria.
+- El flush ocurre cuando se alcanza `GPS_BATCH_SIZE` o expira `GPS_FLUSH_TIMEOUT_MS`.
+- Los inserts usan una única sentencia SQL multi-fila con `ON CONFLICT DO NOTHING`.
 
-## Idempotency Strategy
+## Estrategia de Idempotencia
 
-- If `externalId` exists, `(vehicle_id, external_id)` is unique.
-- Otherwise `(vehicle_id, device_timestamp, latitude, longitude)` is the natural dedupe key.
-- The worker only generates alerts from rows actually inserted, avoiding replay duplicates.
+- Si existe `externalId`, `(vehicle_id, external_id)` es único.
+- En caso contrario, `(vehicle_id, device_timestamp, latitude, longitude)` es la clave natural de deduplicación.
+- El worker solo genera alertas a partir de filas realmente insertadas, evitando duplicados por reejecución.
 
-## No Data Loss Guarantees
+## Garantías de No Pérdida de Datos
 
-- Messages are persistent.
-- Main queue and DLQ are durable.
-- ACK happens only after successful database commit.
-- If PostgreSQL fails, messages stay unacked and are redelivered.
-- Invalid payloads are routed to the DLQ.
+- Los mensajes son persistentes.
+- La cola principal y la DLQ son duraderas.
+- El ACK ocurre solo tras el commit exitoso de la base de datos.
+- Si PostgreSQL falla, los mensajes permanecen sin ACK y son reentregados.
+- Los payloads inválidos se enrutan a la DLQ.
 
-## Validation Rules
+## Reglas de Validación
 
-- Latitude: `-90..90`
-- Longitude: `-180..180`
+- Latitud: `-90..90`
+- Longitud: `-180..180`
 - `speedKmh >= 0`
-- `accuracy >= 0` when provided
-- `vehicleId` must be UUID
-- `deviceTimestamp` must be valid
+- `accuracy >= 0` cuando se proporciona
+- `vehicleId` debe ser UUID
+- `deviceTimestamp` debe ser válido
 
-Future device timestamps are accepted. The API returns a warning and logs structured context.
+Se aceptan timestamps de dispositivo futuros. La API devuelve una advertencia y registra contexto estructurado.
 
-## Health Endpoints
+## Endpoints de Salud
 
-- `GET /ready`: checks PostgreSQL and RabbitMQ connectivity (used by Docker healthcheck)
+- `GET /ready`: verifica la conectividad con PostgreSQL y RabbitMQ (usado por Docker healthcheck)
 
-## Scaling
+## Escalado
 
-Scale horizontally by increasing `worker-gps` replicas and tuning:
+Escala horizontalmente aumentando las réplicas de `worker-gps` y ajustando:
 
 - `GPS_PREFETCH_COUNT`
 - `GPS_BATCH_SIZE`
-- PostgreSQL connection pool sizing
-- RabbitMQ queue throughput
+- Tamaño del pool de conexiones de PostgreSQL
+- Throughput de la cola de RabbitMQ
 
-Because the write model is asynchronous and idempotent, more workers can process in parallel safely.
+Como el modelo de escritura es asíncrono e idempotente, más workers pueden procesar en paralelo de forma segura.
 
-## Known Limitations
+## Limitaciones Conocidas
 
-- Alert worker is currently a placeholder because alert generation happens inside the GPS transaction.
-- Retry policy relies on broker redelivery instead of delayed retry queues.
-- Test database uses SQLite for fast local CI-oriented checks, not TimescaleDB-specific behavior.
+- El worker de alertas es actualmente un placeholder porque la generación de alertas ocurre dentro de la transacción de GPS.
+- La política de reintentos depende de la reentrega del broker en lugar de colas de reintento con retardo.
 
-## Future Improvements
+## Mejoras Futuras
 
-- Add Outbox Pattern for internal event reliability.
-- Add geofence and route-deviation rules.
-- Move alert fan-out to a dedicated queue when alert volume grows.
-- Add dedicated metrics export.
+- Añadir Outbox Pattern para fiabilidad de eventos internos.
+- Añadir reglas de geofence y desviación de ruta.
+- Mover el fan-out de alertas a una cola dedicada cuando el volumen de alertas crezca.
+- Añadir exportación de métricas dedicada.

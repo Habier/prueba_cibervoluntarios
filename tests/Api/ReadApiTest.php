@@ -24,7 +24,7 @@ final class ReadApiTest extends DatabaseTestCase
     public function testGetVehicleCoordinatesSupportsFilters(): void
     {
         $client = static::createClient();
-        $client->request('GET', '/api/vehicles/' . FixtureIds::VEHICLE_ALPHA . '/coordinates?limit=1');
+        $client->request('GET', '/api/vehicles/' . FixtureIds::VEHICLE_1 . '/coordinates?limit=1');
 
         self::assertResponseIsSuccessful();
         $data = json_decode($client->getResponse()->getContent() ?: '[]', true, 512, JSON_THROW_ON_ERROR);
