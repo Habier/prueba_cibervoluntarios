@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    env:
+      TEST_DATABASE_URL: postgresql://app:app@127.0.0.1:55432/app_test?serverVersion=16&charset=utf8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: ctype, iconv, pdo_pgsql
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Composer validate
+        run: composer validate
+
+      - name: Warm test kernel
+        run: php bin/console about --env=test
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse
+
+      - name: ECS
+        run: vendor/bin/ecs check
+
+  tests-postgres:
+    runs-on: ubuntu-latest
+    env:
+      TEST_DATABASE_URL: postgresql://app:app@127.0.0.1:55432/app_test?serverVersion=16&charset=utf8
+
+    services:
+      database:
+        image: timescale/timescaledb-ha:pg16
+        env:
+          POSTGRES_DB: app_test
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -d app_test -U app"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: ctype, iconv, pdo_pgsql
+
+      - uses: ramsey/composer-install@v3
+
+      - name: PHPUnit
+        run: vendor/bin/phpunit
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    needs:
+      - quality
+      - tests-postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build containers
+        run: docker compose build app worker-gps worker-alerts
+
+      - name: Start database and app
+        run: docker compose up -d database app
+
+      - name: Wait for app health
+        run: docker compose ps
+
+      - name: Run migrations in container
+        run: docker compose exec -T app php bin/console doctrine:migrations:migrate --no-interaction

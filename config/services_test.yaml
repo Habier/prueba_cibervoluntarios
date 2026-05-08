@@ -1,0 +1,5 @@
+services:
+    App\Application\Port\GpsMessagePublisherInterface: '@App\Tests\Double\InMemoryGpsMessagePublisher'
+
+    App\Tests\Double\InMemoryGpsMessagePublisher:
+        public: true
