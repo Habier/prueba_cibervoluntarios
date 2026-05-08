@@ -18,6 +18,13 @@ final class InMemoryGpsMessagePublisher implements GpsMessagePublisherInterface
         $this->messages[] = $payload;
     }
 
+    public function publishBatch(array $payloads): void
+    {
+        foreach ($payloads as $payload) {
+            $this->messages[] = $payload;
+        }
+    }
+
     public function reset(): void
     {
         $this->messages = [];

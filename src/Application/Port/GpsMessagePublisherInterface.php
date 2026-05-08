@@ -10,4 +10,9 @@ interface GpsMessagePublisherInterface
      * @param array<string, mixed> $payload
      */
     public function publish(array $payload): void;
+
+    /**
+     * @param list<array<string, mixed>> $payloads
+     */
+    public function publishBatch(array $payloads): void;
 }

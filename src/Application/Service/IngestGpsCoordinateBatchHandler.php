@@ -30,13 +30,14 @@ final readonly class IngestGpsCoordinateBatchHandler
 
         $futureTimestamps = 0;
         $now = new \DateTimeImmutable();
+        $payloads = [];
 
         foreach ($command->coordinates as $coordinate) {
             if (new \DateTimeImmutable($coordinate->deviceTimestamp) > $now) {
                 ++$futureTimestamps;
             }
 
-            $this->publisher->publish([
+            $payloads[] = [
                 'externalId' => $coordinate->externalId,
                 'vehicleId' => $coordinate->vehicleId,
                 'latitude' => $coordinate->latitude,
@@ -46,8 +47,10 @@ final readonly class IngestGpsCoordinateBatchHandler
                 'accuracy' => $coordinate->accuracy,
                 'deviceTimestamp' => $coordinate->deviceTimestamp,
                 'receivedAt' => $now->format(DATE_ATOM),
-            ]);
+            ];
         }
+
+        $this->publisher->publishBatch($payloads);
 
         $warnings = [];
 

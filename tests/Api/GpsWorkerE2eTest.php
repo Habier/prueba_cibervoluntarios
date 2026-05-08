@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Api;
 
 use App\DataFixtures\FixtureIds;
+use App\Infrastructure\Messaging\RabbitMq\RabbitMqConfig;
 use App\Infrastructure\Messaging\RabbitMq\RabbitMqConnectionFactory;
 use App\Infrastructure\Messaging\RabbitMq\RabbitMqGpsMessagePublisher;
-use App\Infrastructure\Messaging\RabbitMq\RabbitMqConfig;
 use App\Infrastructure\Messaging\RabbitMq\RabbitMqTopologyManager;
 use App\Infrastructure\Worker\GpsMessageConsumer;
 use App\Tests\Double\InMemoryGpsMessagePublisher;

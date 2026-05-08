@@ -89,6 +89,7 @@
         "test": [
             "docker compose up -d database app rabbitmq",
             "docker compose stop worker-gps worker-alerts",
+            "docker compose restart app",
             "docker compose exec app vendor/bin/phpunit"
         ],
         "test:system": [

@@ -18,18 +18,29 @@ final readonly class RabbitMqGpsMessagePublisher implements GpsMessagePublisherI
 
     public function publish(array $payload): void
     {
+        $this->publishBatch([$payload]);
+    }
+
+    public function publishBatch(array $payloads): void
+    {
+        if ($payloads === []) {
+            return;
+        }
+
         $connection = $this->connectionFactory->create();
         $channel = $connection->channel();
         $this->topologyManager->declare($channel);
 
-        $channel->basic_publish(
-            new AMQPMessage((string) json_encode($payload, JSON_THROW_ON_ERROR), [
-                'delivery_mode' => 2,
-                'content_type' => 'application/json',
-            ]),
-            $this->config->exchange,
-            $this->config->routingKey,
-        );
+        foreach ($payloads as $payload) {
+            $channel->basic_publish(
+                new AMQPMessage((string) json_encode($payload, JSON_THROW_ON_ERROR), [
+                    'delivery_mode' => 2,
+                    'content_type' => 'application/json',
+                ]),
+                $this->config->exchange,
+                $this->config->routingKey,
+            );
+        }
 
         $channel->close();
         $connection->close();

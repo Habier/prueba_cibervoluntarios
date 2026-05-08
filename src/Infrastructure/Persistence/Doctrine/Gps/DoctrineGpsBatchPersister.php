@@ -63,7 +63,7 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
 
     /**
      * @param list<GpsCoordinate> $coordinates
-     * @param list<string> $knownVehicleIds
+     * @param list<string>        $knownVehicleIds
      */
     private function logUnknownVehicles(array $coordinates, array $knownVehicleIds): void
     {
