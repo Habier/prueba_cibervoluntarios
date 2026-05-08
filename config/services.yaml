@@ -7,6 +7,38 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    app.default.gps_batch_size: 100
+    app.default.gps_flush_timeout_ms: 500
+    app.default.gps_prefetch_count: 500
+    app.default.gps_max_batch_request_size: 500
+    app.default.gps_speed_limit_kmh: 120
+    app.default.rabbitmq.host: 'rabbitmq'
+    app.default.rabbitmq.port: 5672
+    app.default.rabbitmq.user: 'guest'
+    app.default.rabbitmq.password: 'guest'
+    app.default.rabbitmq.vhost: '/'
+    app.default.rabbitmq.exchange: 'gps.coordinates'
+    app.default.rabbitmq.queue: 'gps.coordinates.queue'
+    app.default.rabbitmq.routing_key: 'gps.coordinates.ingest'
+    app.default.rabbitmq.dlq_exchange: 'gps.coordinates.dlq'
+    app.default.rabbitmq.dlq_queue: 'gps.coordinates.queue.dlq'
+    app.default.rabbitmq.dlq_routing_key: 'gps.coordinates.dlq'
+    app.gps.batch_size: '%env(default:app.default.gps_batch_size:int:GPS_BATCH_SIZE)%'
+    app.gps.flush_timeout_ms: '%env(default:app.default.gps_flush_timeout_ms:int:GPS_FLUSH_TIMEOUT_MS)%'
+    app.gps.prefetch_count: '%env(default:app.default.gps_prefetch_count:int:GPS_PREFETCH_COUNT)%'
+    app.gps.max_batch_request_size: '%env(default:app.default.gps_max_batch_request_size:int:GPS_MAX_BATCH_REQUEST_SIZE)%'
+    app.gps.speed_limit_kmh: '%env(default:app.default.gps_speed_limit_kmh:float:GPS_SPEED_LIMIT_KMH)%'
+    app.rabbitmq.host: '%env(default:app.default.rabbitmq.host:string:RABBITMQ_HOST)%'
+    app.rabbitmq.port: '%env(default:app.default.rabbitmq.port:int:RABBITMQ_PORT)%'
+    app.rabbitmq.user: '%env(default:app.default.rabbitmq.user:string:RABBITMQ_USER)%'
+    app.rabbitmq.password: '%env(default:app.default.rabbitmq.password:string:RABBITMQ_PASSWORD)%'
+    app.rabbitmq.vhost: '%env(default:app.default.rabbitmq.vhost:string:RABBITMQ_VHOST)%'
+    app.rabbitmq.exchange: '%env(default:app.default.rabbitmq.exchange:string:RABBITMQ_GPS_EXCHANGE)%'
+    app.rabbitmq.queue: '%env(default:app.default.rabbitmq.queue:string:RABBITMQ_GPS_QUEUE)%'
+    app.rabbitmq.routing_key: '%env(default:app.default.rabbitmq.routing_key:string:RABBITMQ_GPS_ROUTING_KEY)%'
+    app.rabbitmq.dlq_exchange: '%env(default:app.default.rabbitmq.dlq_exchange:string:RABBITMQ_GPS_DLQ_EXCHANGE)%'
+    app.rabbitmq.dlq_queue: '%env(default:app.default.rabbitmq.dlq_queue:string:RABBITMQ_GPS_DLQ_QUEUE)%'
+    app.rabbitmq.dlq_routing_key: '%env(default:app.default.rabbitmq.dlq_routing_key:string:RABBITMQ_GPS_DLQ_ROUTING_KEY)%'
 
 services:
     # default configuration for services in *this* file
@@ -18,6 +50,50 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+        exclude:
+            - '../src/Domain/'
+            - '../src/Kernel.php'
+
+    App\Application\Config\GpsIngestionConfig:
+        arguments:
+            $batchSize: '%app.gps.batch_size%'
+            $flushTimeoutMs: '%app.gps.flush_timeout_ms%'
+            $prefetchCount: '%app.gps.prefetch_count%'
+            $maxBatchRequestSize: '%app.gps.max_batch_request_size%'
+            $speedLimitKmh: '%app.gps.speed_limit_kmh%'
+
+    App\Infrastructure\Messaging\RabbitMq\RabbitMqConfig:
+        arguments:
+            $host: '%app.rabbitmq.host%'
+            $port: '%app.rabbitmq.port%'
+            $user: '%app.rabbitmq.user%'
+            $password: '%app.rabbitmq.password%'
+            $vhost: '%app.rabbitmq.vhost%'
+            $exchange: '%app.rabbitmq.exchange%'
+            $queue: '%app.rabbitmq.queue%'
+            $routingKey: '%app.rabbitmq.routing_key%'
+            $dlqExchange: '%app.rabbitmq.dlq_exchange%'
+            $dlqQueue: '%app.rabbitmq.dlq_queue%'
+            $dlqRoutingKey: '%app.rabbitmq.dlq_routing_key%'
+
+    App\Application\Port\GpsMessagePublisherInterface: '@App\Infrastructure\Messaging\RabbitMq\RabbitMqGpsMessagePublisher'
+    App\Application\Port\DlqPublisherInterface: '@App\Infrastructure\Messaging\RabbitMq\RabbitMqDlqPublisher'
+    App\Application\Port\GpsBatchPersisterInterface: '@App\Infrastructure\Persistence\Doctrine\Gps\DoctrineGpsBatchPersister'
+
+    App\Domain\Alert\SpeedExceededRule:
+        arguments:
+            $speedLimitKmh: '%app.gps.speed_limit_kmh%'
+        tags: ['app.alert_rule']
+
+    App\Domain\Alert\GeofenceBreachRule:
+        tags: ['app.alert_rule']
+
+    App\Domain\Alert\IdleTooLongRule:
+        tags: ['app.alert_rule']
+
+    App\Infrastructure\Persistence\Doctrine\Gps\DoctrineGpsBatchPersister:
+        arguments:
+            $alertRules: !tagged_iterator app.alert_rule
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
