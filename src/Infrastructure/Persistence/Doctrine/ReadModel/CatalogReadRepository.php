@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Persistence\Doctrine\ReadModel;
 
-use App\Api\Output\AlertTypeOutput;
 use App\Api\Output\FleetOutput;
 use App\Api\Output\FleetVehicleOutput;
 use App\Api\Output\LastPositionOutput;
 use App\Api\Output\VehicleCoordinateOutput;
 use App\Api\Output\VehicleOutput;
-use App\Api\Output\VehicleTypeOutput;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -119,21 +117,5 @@ final readonly class CatalogReadRepository
         return array_map(static fn (array $row): FleetVehicleOutput => new FleetVehicleOutput((string) $row['id'], (string) $row['plate'], (string) $row['status']), $this->connection->fetchAllAssociative('SELECT id, plate, status FROM vehicles WHERE fleet_id = :fleetId ORDER BY plate ASC', [
             'fleetId' => $fleetId,
         ]));
-    }
-
-    /**
-     * @return list<VehicleTypeOutput>
-     */
-    public function vehicleTypes(): array
-    {
-        return array_map(static fn (array $row): VehicleTypeOutput => new VehicleTypeOutput((string) $row['id'], (string) $row['code'], (string) $row['name'], $row['description'] ? (string) $row['description'] : null, (bool) $row['active']), $this->connection->fetchAllAssociative('SELECT id, code, name, description, active FROM vehicle_types ORDER BY code ASC'));
-    }
-
-    /**
-     * @return list<AlertTypeOutput>
-     */
-    public function alertTypes(): array
-    {
-        return array_map(static fn (array $row): AlertTypeOutput => new AlertTypeOutput((string) $row['id'], (string) $row['code'], (string) $row['name'], $row['description'] ? (string) $row['description'] : null, (bool) $row['active'], (string) $row['default_severity']), $this->connection->fetchAllAssociative('SELECT id, code, name, description, active, default_severity FROM alert_types ORDER BY code ASC'));
     }
 }

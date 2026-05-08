@@ -30,6 +30,17 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
     #[WithoutErrorHandler]
     public function testWorkerConsumesHundredsOfRealisticCoordinatesFromRabbitMq(): void
     {
+        // This test validates the full asynchronous ingestion path with real
+        // infrastructure boundaries (publish -> queue -> consume -> persist), not
+        // just domain logic in isolation.
+        //
+        // Why this matters:
+        // - It proves that HTTP-side publication effectively reaches RabbitMQ.
+        // - It proves that worker consumption persists coordinates and generates alerts.
+        // - It proves queues are drained after processing (no hidden backlog).
+        //
+        // It intentionally resolves RabbitMQ services directly and uses a fresh
+        // publisher instance to avoid accidentally passing through in-memory test doubles.
         static::createClient();
         $container = static::getContainer();
         $this->purgeQueues($container);

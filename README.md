@@ -52,6 +52,22 @@ Ejecutar tests PHPUnit
 composer test
 ```
 
+### Nota importante sobre `composer test` y RabbitMQ e2e
+
+El script `composer test` hace tres cosas deliberadas antes de ejecutar PHPUnit:
+
+1. levanta `database`, `app` y `rabbitmq`
+2. **detiene** `worker-gps` y `worker-alerts`
+3. **reinicia** `app`
+
+Esto evita tests frágiles en `GpsWorkerE2eTest`:
+
+- Si un worker Docker queda corriendo en paralelo, puede consumir mensajes de la cola mientras PHPUnit ejecuta el test, robando carga y rompiendo aserciones de conteo.
+- El test e2e necesita control total del ciclo de consumo (publicar, luego consumir explícitamente dentro del propio test).
+- El restart de `app` garantiza un contenedor limpio para las variables de entorno de test y evita estado residual entre ejecuciones.
+
+En resumen: ese e2e **no** comprueba escalado multi-worker; comprueba de forma determinista el contrato end-to-end de publicación + consumo + persistencia bajo un único consumidor controlado por PHPUnit.
+
 Ejecutar el system test end-to-end contra el stack Docker local actual:
 
 ```bash
@@ -133,6 +149,31 @@ Se aceptan timestamps de dispositivo futuros. La API devuelve una advertencia y 
 ## Endpoints de Salud
 
 - `GET /ready`: verifica la conectividad con PostgreSQL y RabbitMQ (usado por Docker healthcheck)
+
+## Documentación de la API
+
+La API utiliza API Platform y genera automáticamente documentación OpenAPI 3.1.0.
+
+### Acceder a la documentación
+
+Archivo `openapi.yaml` en la raíz del proyecto, que contiene la especificación completa de la API con descripciones detalladas y ejemplos para todos los endpoints.
+
+### Regenerar la documentación
+
+Para regenerar el archivo `openapi.yaml` después de actualizar endpoints:
+
+```bash
+php bin/console api:openapi:export --yaml -o openapi.yaml
+```
+
+**Nota**: Al regenerar el archivo YAML, es necesario editar manualmente la sección `servers` para establecer el servidor local:
+
+```yaml
+servers:
+  -
+    url: http://localhost:8081
+    description: 'Local development server'
+```
 
 ## Escalado
 

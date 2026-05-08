@@ -53,26 +53,4 @@ final class ReadApiTest extends DatabaseTestCase
         $items = $data['member'] ?? $data['hydra:member'] ?? $data;
         self::assertCount(1, $items);
     }
-
-    public function testGetVehicleTypes(): void
-    {
-        $client = static::createClient();
-        $client->request('GET', '/api/vehicle-types');
-
-        self::assertResponseIsSuccessful();
-        $data = json_decode($client->getResponse()->getContent() ?: '[]', true, 512, JSON_THROW_ON_ERROR);
-        $items = $data['member'] ?? $data['hydra:member'] ?? $data;
-        self::assertCount(3, $items);
-    }
-
-    public function testGetAlertTypes(): void
-    {
-        $client = static::createClient();
-        $client->request('GET', '/api/alert-types');
-
-        self::assertResponseIsSuccessful();
-        $data = json_decode($client->getResponse()->getContent() ?: '[]', true, 512, JSON_THROW_ON_ERROR);
-        $items = $data['member'] ?? $data['hydra:member'] ?? $data;
-        self::assertCount(3, $items);
-    }
 }

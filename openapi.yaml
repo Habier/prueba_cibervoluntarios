@@ -1,0 +1,679 @@
+openapi: 3.1.0
+info:
+  title: 'IoT Logistics API'
+  description: ''
+  version: 1.0.0
+servers:
+  -
+    url: http://localhost:8081
+    description: 'Local development server'
+paths:
+  /api/fleets:
+    get:
+      operationId: api_fleets_get_collection
+      tags:
+        - FleetOutput
+      responses:
+        '200':
+          description: 'FleetOutput collection'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FleetOutput'
+      summary: 'Retrieves the collection of FleetOutput resources.'
+      description: 'Retrieves the collection of FleetOutput resources.'
+      parameters:
+        -
+          name: page
+          in: query
+          description: 'The collection page number'
+          required: false
+          deprecated: false
+          schema:
+            type: integer
+            default: 1
+          style: form
+          explode: true
+  '/api/fleets/{id}/vehicles':
+    get:
+      operationId: api_fleets_idvehicles_get_collection
+      tags:
+        - FleetVehicleOutput
+      responses:
+        '200':
+          description: 'FleetVehicleOutput collection'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FleetVehicleOutput'
+      summary: 'Retrieves the collection of FleetVehicleOutput resources.'
+      description: 'Retrieves the collection of FleetVehicleOutput resources.'
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'FleetVehicleOutput identifier'
+          required: true
+          deprecated: false
+          schema:
+            type: string
+          style: simple
+          explode: false
+        -
+          name: page
+          in: query
+          description: 'The collection page number'
+          required: false
+          deprecated: false
+          schema:
+            type: integer
+            default: 1
+          style: form
+          explode: true
+  /api/gps-coordinates:
+    post:
+      operationId: api_gps-coordinates_post
+      tags:
+        - GpsCoordinateBatch
+      responses:
+        '202':
+          description: 'GpsCoordinateBatch resource created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GpsCoordinateBatch.GpsBatchAcceptedOutput'
+          links: {  }
+        '400':
+          description: 'Invalid input'
+          content:
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/Error.jsonld'
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          links: {  }
+        '422':
+          description: 'An error occurred'
+          content:
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/ConstraintViolation.jsonld'
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ConstraintViolation'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstraintViolation'
+          links: {  }
+      summary: 'Creates a GpsCoordinateBatch resource.'
+      description: 'Creates a GpsCoordinateBatch resource.'
+      parameters: []
+      requestBody:
+        description: 'The new GpsCoordinateBatch resource'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GpsCoordinateBatch'
+        required: true
+  /api/gps-coordinates/batch:
+    post:
+      operationId: api_gps-coordinatesbatch_post
+      tags:
+        - GpsCoordinateBatch
+      responses:
+        '202':
+          description: 'GpsCoordinateBatch resource created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GpsCoordinateBatch.GpsBatchAcceptedOutput'
+          links: {  }
+        '400':
+          description: 'Invalid input'
+          content:
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/Error.jsonld'
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          links: {  }
+        '422':
+          description: 'An error occurred'
+          content:
+            application/ld+json:
+              schema:
+                $ref: '#/components/schemas/ConstraintViolation.jsonld'
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ConstraintViolation'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstraintViolation'
+          links: {  }
+      summary: 'Creates a GpsCoordinateBatch resource.'
+      description: 'Creates a GpsCoordinateBatch resource.'
+      parameters: []
+      requestBody:
+        description: 'The new GpsCoordinateBatch resource'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GpsCoordinateBatch'
+        required: true
+  '/api/vehicles/{id}/coordinates':
+    get:
+      operationId: api_vehicles_idcoordinates_get_collection
+      tags:
+        - VehicleCoordinateOutput
+      responses:
+        '200':
+          description: 'VehicleCoordinateOutput collection'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VehicleCoordinateOutput'
+      summary: 'Retrieves the collection of VehicleCoordinateOutput resources.'
+      description: 'Retrieves the collection of VehicleCoordinateOutput resources.'
+      parameters:
+        -
+          name: id
+          in: path
+          description: 'VehicleCoordinateOutput identifier'
+          required: true
+          deprecated: false
+          schema:
+            type: string
+          style: simple
+          explode: false
+        -
+          name: page
+          in: query
+          description: 'The collection page number'
+          required: false
+          deprecated: false
+          schema:
+            type: integer
+            default: 1
+          style: form
+          explode: true
+  /api/vehicles:
+    get:
+      operationId: api_vehicles_get_collection
+      tags:
+        - VehicleOutput
+      responses:
+        '200':
+          description: 'VehicleOutput collection'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VehicleOutput'
+      summary: 'Retrieves the collection of VehicleOutput resources.'
+      description: 'Retrieves the collection of VehicleOutput resources.'
+      parameters:
+        -
+          name: page
+          in: query
+          description: 'The collection page number'
+          required: false
+          deprecated: false
+          schema:
+            type: integer
+            default: 1
+          style: form
+          explode: true
+components:
+  schemas:
+    ConstraintViolation:
+      type: object
+      description: 'Unprocessable entity'
+      properties:
+        status:
+          default: 422
+          type: integer
+        violations:
+          type: array
+          items:
+            type: object
+            properties:
+              propertyPath:
+                type: string
+                description: 'The property path of the violation'
+              message:
+                type: string
+                description: 'The message associated with the violation'
+              code:
+                type: string
+                description: 'The code of the violation'
+              hint:
+                type: string
+                description: 'An extra hint to understand the violation'
+              payload:
+                type: object
+                additionalProperties: true
+                description: 'The serialized payload of the violation'
+            required:
+              - propertyPath
+              - message
+        detail:
+          readOnly: true
+          type: string
+        type:
+          readOnly: true
+          type: string
+        title:
+          readOnly: true
+          type:
+            - string
+            - 'null'
+        instance:
+          readOnly: true
+          type:
+            - string
+            - 'null'
+    ConstraintViolation.jsonld:
+      type: object
+      description: 'Unprocessable entity'
+      properties:
+        status:
+          default: 422
+          type: integer
+        violations:
+          type: array
+          items:
+            type: object
+            properties:
+              propertyPath:
+                type: string
+                description: 'The property path of the violation'
+              message:
+                type: string
+                description: 'The message associated with the violation'
+              code:
+                type: string
+                description: 'The code of the violation'
+              hint:
+                type: string
+                description: 'An extra hint to understand the violation'
+              payload:
+                type: object
+                additionalProperties: true
+                description: 'The serialized payload of the violation'
+            required:
+              - propertyPath
+              - message
+        detail:
+          readOnly: true
+          type: string
+        description:
+          readOnly: true
+          type: string
+        type:
+          readOnly: true
+          type: string
+        title:
+          readOnly: true
+          type:
+            - string
+            - 'null'
+        instance:
+          readOnly: true
+          type:
+            - string
+            - 'null'
+    Error:
+      type: object
+      description: 'A representation of common errors.'
+      properties:
+        title:
+          readOnly: true
+          description: 'A short, human-readable summary of the problem.'
+          type:
+            - string
+            - 'null'
+        detail:
+          readOnly: true
+          description: 'A human-readable explanation specific to this occurrence of the problem.'
+          type:
+            - string
+            - 'null'
+        status:
+          type:
+            - integer
+            - 'null'
+          examples:
+            - 404
+          default: 400
+        instance:
+          readOnly: true
+          description: 'A URI reference that identifies the specific occurrence of the problem. It may or may not yield further information if dereferenced.'
+          type:
+            - string
+            - 'null'
+        type:
+          readOnly: true
+          description: 'A URI reference that identifies the problem type'
+          type: string
+    Error.jsonld:
+      type: object
+      description: 'A representation of common errors.'
+      properties:
+        title:
+          readOnly: true
+          description: 'A short, human-readable summary of the problem.'
+          type:
+            - string
+            - 'null'
+        detail:
+          readOnly: true
+          description: 'A human-readable explanation specific to this occurrence of the problem.'
+          type:
+            - string
+            - 'null'
+        status:
+          type:
+            - integer
+            - 'null'
+          examples:
+            - 404
+          default: 400
+        instance:
+          readOnly: true
+          description: 'A URI reference that identifies the specific occurrence of the problem. It may or may not yield further information if dereferenced.'
+          type:
+            - string
+            - 'null'
+        type:
+          readOnly: true
+          description: 'A URI reference that identifies the problem type'
+          type: string
+        description:
+          readOnly: true
+          type:
+            - string
+            - 'null'
+    FleetOutput:
+      type: object
+      description: 'Fleet management endpoints for managing vehicle fleets'
+      properties:
+        id:
+          description: 'Unique identifier of the fleet'
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
+        name:
+          description: 'Name of the fleet'
+          example: 'Emergency Response Fleet'
+          type: string
+        clientName:
+          description: 'Name of the client organization that owns the fleet'
+          example: 'City Fire Department'
+          type: string
+        description:
+          description: 'Optional description of the fleet'
+          example: 'Fleet of emergency response vehicles'
+          type:
+            - string
+            - 'null'
+    FleetVehicleOutput:
+      type: object
+      description: 'Fleet vehicle endpoints for managing vehicles within a specific fleet'
+      properties:
+        id:
+          description: 'Unique identifier of the vehicle'
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
+        plate:
+          description: 'License plate number of the vehicle'
+          example: ABC-1234
+          type: string
+        status:
+          description: 'Current status of the vehicle (e.g., active, inactive, maintenance)'
+          example: active
+          type: string
+    GpsCoordinateBatch:
+      type: object
+      description: 'Endpoint for ingesting GPS coordinate data from vehicles. Accepts batches of GPS coordinates for processing.'
+      required:
+        - coordinates
+      properties:
+        coordinates:
+          type: array
+          items:
+            $ref: '#/components/schemas/GpsCoordinateInput'
+    GpsCoordinateBatch.GpsBatchAcceptedOutput:
+      type: object
+      description: 'Endpoint for ingesting GPS coordinate data from vehicles. Accepts batches of GPS coordinates for processing.'
+      properties:
+        accepted:
+          description: 'Number of GPS coordinates accepted for processing'
+          example: 100
+          type: integer
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/WarningOutput'
+    GpsCoordinateInput:
+      type: object
+      properties:
+        externalId:
+          maxLength: 255
+          description: 'External identifier from the GPS device system'
+          example: GPS-DEVICE-001
+          type:
+            - string
+            - 'null'
+        vehicleId:
+          format: uuid
+          description: 'Unique identifier of the vehicle (UUID)'
+          externalDocs:
+            url: 'https://schema.org/identifier'
+          default: ''
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
+        latitude:
+          minimum: -90
+          maximum: 90
+          description: 'Latitude coordinate in decimal degrees (-90 to 90)'
+          example: 40.7128
+          type: number
+        longitude:
+          minimum: -180
+          maximum: 180
+          description: 'Longitude coordinate in decimal degrees (-180 to 180)'
+          example: -74.006
+          type: number
+        altitude:
+          description: 'Altitude in meters above sea level'
+          example: 10.5
+          type:
+            - number
+            - 'null'
+        speedKmh:
+          minimum: 0
+          description: 'Speed in kilometers per hour'
+          example: 50.0
+          type: number
+        accuracy:
+          minimum: 0
+          description: 'GPS accuracy in meters'
+          example: 5.0
+          type:
+            - number
+            - 'null'
+        deviceTimestamp:
+          description: 'Timestamp from the GPS device in ISO 8601 format'
+          externalDocs:
+            url: 'https://schema.org/DateTime'
+          default: ''
+          example: '2024-01-01T12:00:00+00:00'
+          type: string
+      required:
+        - vehicleId
+        - latitude
+        - longitude
+        - speedKmh
+        - deviceTimestamp
+    LastPositionOutput:
+      type: object
+      properties:
+        latitude:
+          description: 'Latitude coordinate in decimal degrees'
+          example: 40.7128
+          type: number
+        longitude:
+          description: 'Longitude coordinate in decimal degrees'
+          example: -74.006
+          type: number
+        altitude:
+          description: 'Altitude in meters above sea level'
+          example: 10.5
+          type:
+            - number
+            - 'null'
+        speedKmh:
+          description: 'Speed in kilometers per hour'
+          example: 50.0
+          type: number
+        accuracy:
+          description: 'GPS accuracy in meters'
+          example: 5.0
+          type:
+            - number
+            - 'null'
+        deviceTimestamp:
+          description: 'Timestamp from the GPS device in ISO 8601 format'
+          example: '2024-01-01T12:00:00+00:00'
+          type: string
+        receivedAt:
+          description: 'Timestamp when the position was received by the system in ISO 8601 format'
+          example: '2024-01-01T12:00:05+00:00'
+          type: string
+    VehicleCoordinateOutput:
+      type: object
+      description: 'Vehicle coordinate history endpoints for tracking vehicle movements over time'
+      properties:
+        externalId:
+          description: 'External identifier from the GPS device system'
+          example: GPS-DEVICE-001
+          type:
+            - string
+            - 'null'
+        latitude:
+          description: 'Latitude coordinate in decimal degrees'
+          example: 40.7128
+          type: number
+        longitude:
+          description: 'Longitude coordinate in decimal degrees'
+          example: -74.006
+          type: number
+        altitude:
+          description: 'Altitude in meters above sea level'
+          example: 10.5
+          type:
+            - number
+            - 'null'
+        speedKmh:
+          description: 'Speed in kilometers per hour'
+          example: 50.0
+          type: number
+        accuracy:
+          description: 'GPS accuracy in meters'
+          example: 5.0
+          type:
+            - number
+            - 'null'
+        deviceTimestamp:
+          description: 'Timestamp from the GPS device in ISO 8601 format'
+          example: '2024-01-01T12:00:00+00:00'
+          type: string
+        receivedAt:
+          description: 'Timestamp when the coordinate was received by the system in ISO 8601 format'
+          example: '2024-01-01T12:00:05+00:00'
+          type: string
+    VehicleOutput:
+      type: object
+      description: 'Vehicle management endpoints for tracking and managing vehicles'
+      properties:
+        id:
+          description: 'Unique identifier of the vehicle'
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
+        plate:
+          description: 'License plate number of the vehicle'
+          example: ABC-1234
+          type: string
+        status:
+          description: 'Current status of the vehicle (e.g., active, inactive, maintenance)'
+          example: active
+          type: string
+        vehicleType:
+          description: 'Type classification of the vehicle with code and name'
+          example: '{"id": "type-123", "code": "AMB", "name": "Ambulance"}'
+          type: object
+          additionalProperties:
+            type: string
+        fleet:
+          description: 'Fleet information if the vehicle belongs to a fleet'
+          example: '{"id": "fleet-123", "name": "Emergency Response Fleet"}'
+          type:
+            - object
+            - 'null'
+          additionalProperties:
+            type: string
+        lastPosition:
+          anyOf:
+            -
+              $ref: '#/components/schemas/LastPositionOutput'
+            -
+              type: 'null'
+    WarningOutput:
+      type: object
+      properties:
+        type:
+          description: 'Type of warning (e.g., validation_error, processing_error)'
+          example: validation_error
+          type: string
+        message:
+          description: 'Human-readable warning message describing the issue'
+          example: 'Invalid vehicle ID format'
+          type: string
+  responses: {  }
+  parameters: {  }
+  examples: {  }
+  requestBodies: {  }
+  headers: {  }
+  securitySchemes: {  }
+security: []
+tags:
+  -
+    name: GpsCoordinateBatch
+    description: 'Endpoint for ingesting GPS coordinate data from vehicles. Accepts batches of GPS coordinates for processing.'
+  -
+    name: FleetOutput
+    description: 'Fleet management endpoints for managing vehicle fleets'
+  -
+    name: FleetVehicleOutput
+    description: 'Fleet vehicle endpoints for managing vehicles within a specific fleet'
+  -
+    name: VehicleCoordinateOutput
+    description: 'Vehicle coordinate history endpoints for tracking vehicle movements over time'
+  -
+    name: VehicleOutput
+    description: 'Vehicle management endpoints for tracking and managing vehicles'
+webhooks: {  }
