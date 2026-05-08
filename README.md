@@ -21,16 +21,22 @@ Backend en Symfony 7.4 / PHP 8.4 para la ingesta de GPS de alto rendimiento en u
 
 ```bash
 docker compose up --build -d
-docker compose exec app php bin/console doctrine:migrations:migrate --no-interaction
-docker compose exec app php bin/console doctrine:fixtures:load --no-interaction
+composer initialize
 ```
 
-## Ejecutar Workers
+## Inicializar base de datos
+
+Comando recomendado para preparar el entorno local:
 
 ```bash
-docker compose exec worker-gps php bin/console app:gps:consume
-docker compose exec worker-alerts php bin/console app:alerts:consume
+composer initialize
 ```
+
+Este comando:
+
+1. levanta `database` y `app`
+2. ejecuta migraciones
+3. carga fixtures
 
 ## Tests y Calidad
 
@@ -49,11 +55,10 @@ composer test
 Ejecutar el system test end-to-end contra el stack Docker local actual:
 
 ```bash
-npm install
-npm run test:system
+composer test:system
 ```
 
-`npm install` es necesario porque el runner usa la dependencia Node `pg`. `npm run test:system` asume la configuración Docker local por defecto de este proyecto (`app` en `localhost:8081`, PostgreSQL en `localhost:55432` y RabbitMQ management en `localhost:15672`). Asegúrate de tener `docker compose up -d`, migraciones aplicadas y datos base cargados antes de ejecutarlo.
+`composer test:system` ejecuta `composer initialize`, luego `npm ci` y finalmente `npm run test:system`. El runner usa la dependencia Node `pg` y asume la configuración Docker local por defecto de este proyecto (`app` en `localhost:8081`, PostgreSQL en `localhost:55432` y RabbitMQ management en `localhost:15672`).
 
 Si quieres ejecutar `vendor/bin/phpunit` en el host en lugar de dentro de Docker, tu PHP local debe tener `pdo_pgsql` habilitado y la base de datos Docker debe estar expuesta en `127.0.0.1:55432`.
 
