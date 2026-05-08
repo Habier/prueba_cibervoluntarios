@@ -28,6 +28,9 @@ parameters:
     app.default.rabbitmq.dlq_exchange: 'gps.coordinates.dlq'
     app.default.rabbitmq.dlq_queue: 'gps.coordinates.queue.dlq'
     app.default.rabbitmq.dlq_routing_key: 'gps.coordinates.dlq'
+    app.default.redis_cache_provider: 'redis://127.0.0.1:6379'
+    app.vehicle_catalog_cache.known_ttl_seconds: 300
+    app.vehicle_catalog_cache.unknown_ttl_seconds: 15
     app.gps.batch_size: '%env(default:app.default.gps_batch_size:int:GPS_BATCH_SIZE)%'
     app.gps.flush_timeout_ms: '%env(default:app.default.gps_flush_timeout_ms:int:GPS_FLUSH_TIMEOUT_MS)%'
     app.gps.prefetch_count: '%env(default:app.default.gps_prefetch_count:int:GPS_PREFETCH_COUNT)%'
@@ -89,7 +92,14 @@ services:
     App\Application\Port\GpsMessagePublisherInterface: '@App\Infrastructure\Messaging\RabbitMq\RabbitMqGpsMessagePublisher'
     App\Application\Port\DlqPublisherInterface: '@App\Infrastructure\Messaging\RabbitMq\RabbitMqDlqPublisher'
     App\Application\Port\GpsBatchPersisterInterface: '@App\Infrastructure\Persistence\Doctrine\Gps\DoctrineGpsBatchPersister'
-    App\Application\Port\VehicleCatalogInterface: '@App\Infrastructure\Persistence\Doctrine\Gps\DoctrineVehicleCatalog'
+    App\Application\Port\VehicleCatalogInterface: '@App\Infrastructure\Cache\CachedVehicleCatalog'
+
+    App\Infrastructure\Cache\CachedVehicleCatalog:
+        arguments:
+            $inner: '@App\Infrastructure\Persistence\Doctrine\Gps\DoctrineVehicleCatalog'
+            $cache: '@vehicle_catalog.cache'
+            $knownVehicleTtlSeconds: '%app.vehicle_catalog_cache.known_ttl_seconds%'
+            $unknownVehicleTtlSeconds: '%app.vehicle_catalog_cache.unknown_ttl_seconds%'
 
     App\Domain\Alert\SpeedExceededRule:
         arguments:

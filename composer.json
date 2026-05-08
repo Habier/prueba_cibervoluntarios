@@ -82,12 +82,12 @@
     },
     "scripts": {
         "initialize": [
-            "docker compose up -d database app",
+            "docker compose up -d database redis app",
             "docker compose exec app php bin/console doctrine:migrations:migrate --no-interaction",
             "docker compose exec app php bin/console doctrine:fixtures:load --no-interaction"
         ],
         "test": [
-            "docker compose up -d database app rabbitmq",
+            "docker compose up -d database redis app rabbitmq",
             "docker compose stop worker-gps worker-alerts",
             "docker compose restart app",
             "docker compose exec app vendor/bin/phpunit"

@@ -10,6 +10,7 @@ services:
       APP_SECRET: dev-secret
       DATABASE_URL: postgresql://app:app@database:5432/app?serverVersion=16&charset=utf8
       TEST_DATABASE_URL: postgresql://app:app@database:5432/app_test?serverVersion=16&charset=utf8
+      REDIS_CACHE_PROVIDER: redis://redis:6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: guest
@@ -22,6 +23,8 @@ services:
       GPS_SPEED_LIMIT_KMH: 120
     depends_on:
       database:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -44,6 +47,7 @@ services:
       APP_ENV: dev
       APP_SECRET: dev-secret
       DATABASE_URL: postgresql://app:app@database:5432/app?serverVersion=16&charset=utf8
+      REDIS_CACHE_PROVIDER: redis://redis:6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: guest
@@ -56,6 +60,8 @@ services:
       GPS_SPEED_LIMIT_KMH: 120
     depends_on:
       database:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -73,6 +79,7 @@ services:
       APP_ENV: dev
       APP_SECRET: dev-secret
       DATABASE_URL: postgresql://app:app@database:5432/app?serverVersion=16&charset=utf8
+      REDIS_CACHE_PROVIDER: redis://redis:6379
     depends_on:
       database:
         condition: service_healthy

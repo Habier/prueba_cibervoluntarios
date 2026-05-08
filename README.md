@@ -92,6 +92,36 @@ Es un diseño ligero inspirado en CQRS:
 - **Lado del worker**: `app:gps:consume` almacena mensajes en buffer, los persiste con DBAL, actualiza `vehicle_last_positions` y crea alertas.
 - **Lado de lectura**: los providers de API Platform leen proyecciones optimizadas y coordenadas históricas.
 
+## Decisiones de diseño
+
+### Qué problema resuelve esta arquitectura
+
+El objetivo principal no es responder con lógica pesada dentro de la petición HTTP, sino **absorber picos de escritura sin perder datos**.
+
+Por eso el sistema separa claramente dos responsabilidades:
+
+- **HTTP** valida rápido y delega trabajo.
+- **Workers** hacen el trabajo costoso fuera de la latencia del cliente.
+
+### Decisiones clave
+
+| Decisión | Por qué se tomó | Trade-off aceptado |
+|---|---|---|
+| Ingesta asíncrona con RabbitMQ | desacopla el pico HTTP del ritmo real de persistencia | la consistencia visible para lectura no es inmediata |
+| Cache Redis para existencia de vehículos | evita consultar PostgreSQL en cada request repetida y reduce presión sobre conexiones | una caché negativa demasiado larga puede rechazar temporalmente un vehículo recién creado |
+| Un mensaje por coordenada | simplifica reintentos, DLQ, trazabilidad e idempotencia | aumenta presión sobre broker si el volumen crece mucho |
+| Batch en el worker | reduce round-trips a PostgreSQL y mejora throughput | añade complejidad de flush por tiempo/tamaño |
+| ACK tras commit | prioriza durabilidad frente a pérdida silenciosa | si PostgreSQL se degrada, aumentará el backlog en cola |
+| Rechazo temprano de `vehicleId` desconocido | evita aceptar datos que luego serían descartados | obliga a que el catálogo esté disponible en la ruta de ingesta |
+| Proyección `vehicle_last_positions` separada | optimiza lecturas frecuentes sin recorrer histórico completo | hay que mantener una vista resumida además del histórico |
+
+### Qué se prioriza explícitamente
+
+1. **Durabilidad** antes que latencia artificialmente baja.
+2. **Idempotencia** antes que throughput ingenuo.
+3. **Escalado horizontal de consumidores** antes que lógica compleja en la API.
+4. **Lecturas optimizadas** mediante proyecciones, no consultas pesadas sobre el histórico completo.
+
 ## Por qué PostgreSQL + TimescaleDB + PostGIS
 
 - PostgreSQL ofrece garantías transaccionales e indexación madura.
@@ -145,6 +175,12 @@ El worker crítico de GPS no usa Symfony Messenger. Usa `php-amqplib` directamen
 - `deviceTimestamp` debe ser válido
 - `vehicleId` debe existir en el catálogo de vehículos (si no existe, la API rechaza el request con `400`, no publica en RabbitMQ y devuelve un error estable con `type = https://api-platform.com/errors/unknown-vehicle-id` y `detail` con los `vehicleId` desconocidos)
 
+La comprobación de existencia de `vehicleId` usa una caché Redis dedicada:
+
+- los `vehicleId` conocidos se cachean con TTL más largo
+- los `vehicleId` desconocidos se cachean con TTL corto para no mantener rechazos obsoletos demasiado tiempo
+- PostgreSQL sigue siendo la fuente de verdad
+
 Se aceptan timestamps de dispositivo futuros. La API devuelve una advertencia y registra contexto estructurado.
 
 ## Endpoints de Salud
@@ -186,6 +222,119 @@ Escala horizontalmente aumentando las réplicas de `worker-gps` y ajustando:
 - Throughput de la cola de RabbitMQ
 
 Como el modelo de escritura es asíncrono e idempotente, más workers pueden procesar en paralelo de forma segura.
+
+### Cómo pensar en picos de 25.000 requests por segundo
+
+**Primero lo importante:** 25.000 rps no es un ajuste fino de variables. Es un objetivo de capacidad que exige diseñar el sistema como una tubería completa: **ingesta HTTP -> broker -> workers -> PostgreSQL**.
+
+Si uno de esos tramos no acompaña, el sistema no escala de verdad; solo mueve el cuello de botella.
+
+### Qué tendría que ocurrir para soportarlo
+
+#### 1. La API HTTP debe hacer muy poco
+
+Para absorber ese pico, la ruta HTTP debe limitarse a:
+
+- validar shape y reglas básicas
+- comprobar existencia de `vehicleId`
+- publicar en RabbitMQ
+- devolver `202/400` rápido
+
+No debe:
+
+- consultar histórico
+- ejecutar lógica espacial pesada
+- persistir coordenadas directamente en PostgreSQL
+- generar alertas complejas dentro de la request
+
+Ese principio ya está reflejado en esta solución y es la base correcta para escalar.
+
+#### 2. RabbitMQ debe absorber el burst, no procesarlo todo en tiempo real
+
+A 25.000 rps, el broker actúa como amortiguador. Eso significa que durante el pico puede crecer el backlog aunque la API siga respondiendo bien.
+
+Eso es aceptable SI:
+
+- la cola principal tiene capacidad suficiente
+- las colas son duraderas
+- hay observabilidad sobre lag, publish rate y consumer rate
+- existe un SLO claro de cuánto retraso de procesamiento se tolera
+
+En otras palabras: **soportar el pico no significa procesar todo instantáneamente**, sino no perder datos y drenar la cola a una velocidad sostenible.
+
+#### 3. Los workers deben escalar horizontalmente con límites reales
+
+Para aumentar capacidad de consumo hay que escalar `worker-gps`, pero con disciplina:
+
+- ajustar `GPS_PREFETCH_COUNT`
+- ajustar `GPS_BATCH_SIZE`
+- ajustar `GPS_FLUSH_TIMEOUT_MS`
+- limitar el número de workers al número real de conexiones/CPU/IO que PostgreSQL puede soportar
+
+Más workers NO siempre implica más throughput. Si PostgreSQL entra en contención, solo conseguirás más competencia por CPU, locks y conexiones.
+
+#### 4. PostgreSQL debe tratar la escritura como carga crítica
+
+Para acercarse a 25.000 rps, la base de datos necesita estar tratada como componente principal del sistema, no como detalle de infraestructura.
+
+Como mínimo:
+
+- pool de conexiones dimensionado para los workers reales
+- índices estrictamente necesarios en tablas calientes
+- TimescaleDB bien configurado para el patrón temporal
+- discos rápidos y WAL dimensionado para escritura sostenida
+- vigilancia sobre bloat, checkpoints y saturación de IO
+
+La estrategia de batch actual ayuda mucho, pero por sí sola no garantiza ese volumen.
+
+#### 5. Las alertas pueden necesitar desacoplarse del commit principal
+
+Hoy las alertas se generan dentro de la transacción de GPS. Eso simplifica consistencia, pero a gran escala puede convertirse en coste adicional en la ruta crítica del worker.
+
+Si el volumen real o la complejidad de reglas crece, el siguiente paso natural es:
+
+- persistir coordenadas y `vehicle_last_positions` primero
+- publicar eventos internos o usar outbox
+- procesar alertas en un pipeline separado
+
+Eso ya está alineado con la sección de mejoras futuras.
+
+### Plan práctico de escalado hacia 25.000 rps
+
+#### Fase 1 — absorber picos de forma segura
+
+- mantener la API mínima y asíncrona
+- medir publish latency, queue depth y consumer lag
+- validar idempotencia bajo reentrega
+- ajustar tamaño de batch y prefetch con carga real
+
+#### Fase 2 — aumentar throughput sostenido
+
+- escalar `worker-gps` horizontalmente
+- separar recursos de app HTTP y workers
+- dimensionar PostgreSQL para escritura sostenida
+- verificar que `vehicle_last_positions` y alertas no se convierten en el cuello de botella
+
+#### Fase 3 — desacoplar trabajo secundario
+
+- mover alertas complejas fuera de la transacción principal
+- evaluar particionado/retención del histórico según volumen real
+- introducir métricas y autoscaling basado en lag y tasa de drenaje
+
+### Señales de que todavía NO estás listo para 25.000 rps
+
+- no conoces el backlog máximo aceptable
+- no mides lag de RabbitMQ
+- no has hecho pruebas de carga con reintentos y duplicados
+- el pool de PostgreSQL no está dimensionado
+- workers y API compiten por los mismos recursos sin aislamiento
+- alertas complejas siguen creciendo dentro de la transacción principal
+
+### Resumen ejecutivo
+
+Este diseño va en la dirección correcta para picos altos porque desacopla la ingesta del procesamiento y protege la durabilidad.
+
+Pero para **soportar 25.000 requests por segundo de verdad**, hay que escalar y observar el sistema completo, no solo “subir workers”.
 
 ## Configuración de reglas de alertas
 
