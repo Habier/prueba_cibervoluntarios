@@ -26,6 +26,15 @@ jobs:
       - name: Warm test kernel
         run: php bin/console about --env=test
 
+      - name: Cache PHPStan
+        uses: actions/cache@v4
+        with:
+          path: var/cache/phpstan
+          key: phpstan-${{ runner.os }}-${{ github.ref_name }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            phpstan-${{ runner.os }}-${{ github.ref_name }}-
+            phpstan-${{ runner.os }}-
+
       - name: PHPStan
         run: vendor/bin/phpstan analyse
 
@@ -74,8 +83,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build containers
-        run: docker compose build app worker-gps worker-alerts
+      - uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+
+      - name: Build containers with cache
+        run: |
+          docker buildx bake \
+            --file compose.yaml \
+            --set *.cache-from=type=gha \
+            --set *.cache-to=type=gha,mode=max \
+            app worker-gps worker-alerts
 
       - name: Start database and app
         run: docker compose up -d database app
