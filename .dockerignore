@@ -1,0 +1,13 @@
+.git
+.idea
+.atl
+var
+vendor
+node_modules
+public/assets
+public/bundles
+.phpunit.cache
+.php-cs-fixer.cache
+docker-data
+coverage
+*.log
