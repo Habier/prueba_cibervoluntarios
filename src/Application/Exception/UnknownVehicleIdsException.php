@@ -23,17 +23,17 @@ final class UnknownVehicleIdsException extends BadRequestHttpException implement
         return 'https://api-platform.com/errors/unknown-vehicle-id';
     }
 
-    public function getTitle(): ?string
+    public function getTitle(): string
     {
         return 'Unknown vehicle identifier';
     }
 
-    public function getStatus(): ?int
+    public function getStatus(): int
     {
         return 400;
     }
 
-    public function getDetail(): ?string
+    public function getDetail(): string
     {
         return $this->getMessage();
     }
