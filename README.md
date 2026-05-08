@@ -140,6 +140,19 @@ Escala horizontalmente aumentando las réplicas de `worker-gps` y ajustando:
 
 Como el modelo de escritura es asíncrono e idempotente, más workers pueden procesar en paralelo de forma segura.
 
+## Configuración de reglas de alertas
+
+Las reglas de alertas críticas son configurables por entorno mediante variables:
+
+- `GPS_SPEED_LIMIT_KMH`
+- `GPS_IDLE_SPEED_THRESHOLD_KMH`
+- `GPS_GEOFENCE_MIN_LATITUDE`
+- `GPS_GEOFENCE_MAX_LATITUDE`
+- `GPS_GEOFENCE_MIN_LONGITUDE`
+- `GPS_GEOFENCE_MAX_LONGITUDE`
+
+Si no se definen explícitamente, Symfony usa defaults seguros declarados en `config/services.yaml`.
+
 ## Limitaciones Conocidas
 
 - El worker de alertas es actualmente un placeholder porque la generación de alertas ocurre dentro de la transacción de GPS.

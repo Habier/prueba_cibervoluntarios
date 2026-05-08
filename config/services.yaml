@@ -12,6 +12,11 @@ parameters:
     app.default.gps_prefetch_count: 500
     app.default.gps_max_batch_request_size: 500
     app.default.gps_speed_limit_kmh: 120
+    app.default.gps_idle_speed_threshold_kmh: 0.5
+    app.default.gps_geofence_min_latitude: 40.3
+    app.default.gps_geofence_max_latitude: 40.5
+    app.default.gps_geofence_min_longitude: -3.8
+    app.default.gps_geofence_max_longitude: -3.5
     app.default.rabbitmq.host: 'rabbitmq'
     app.default.rabbitmq.port: 5672
     app.default.rabbitmq.user: 'guest'
@@ -28,6 +33,11 @@ parameters:
     app.gps.prefetch_count: '%env(default:app.default.gps_prefetch_count:int:GPS_PREFETCH_COUNT)%'
     app.gps.max_batch_request_size: '%env(default:app.default.gps_max_batch_request_size:int:GPS_MAX_BATCH_REQUEST_SIZE)%'
     app.gps.speed_limit_kmh: '%env(default:app.default.gps_speed_limit_kmh:float:GPS_SPEED_LIMIT_KMH)%'
+    app.gps.idle_speed_threshold_kmh: '%env(default:app.default.gps_idle_speed_threshold_kmh:float:GPS_IDLE_SPEED_THRESHOLD_KMH)%'
+    app.gps.geofence.min_latitude: '%env(default:app.default.gps_geofence_min_latitude:float:GPS_GEOFENCE_MIN_LATITUDE)%'
+    app.gps.geofence.max_latitude: '%env(default:app.default.gps_geofence_max_latitude:float:GPS_GEOFENCE_MAX_LATITUDE)%'
+    app.gps.geofence.min_longitude: '%env(default:app.default.gps_geofence_min_longitude:float:GPS_GEOFENCE_MIN_LONGITUDE)%'
+    app.gps.geofence.max_longitude: '%env(default:app.default.gps_geofence_max_longitude:float:GPS_GEOFENCE_MAX_LONGITUDE)%'
     app.rabbitmq.host: '%env(default:app.default.rabbitmq.host:string:RABBITMQ_HOST)%'
     app.rabbitmq.port: '%env(default:app.default.rabbitmq.port:int:RABBITMQ_PORT)%'
     app.rabbitmq.user: '%env(default:app.default.rabbitmq.user:string:RABBITMQ_USER)%'
@@ -86,9 +96,16 @@ services:
         tags: ['app.alert_rule']
 
     App\Domain\Alert\GeofenceBreachRule:
+        arguments:
+            $minLatitude: '%app.gps.geofence.min_latitude%'
+            $maxLatitude: '%app.gps.geofence.max_latitude%'
+            $minLongitude: '%app.gps.geofence.min_longitude%'
+            $maxLongitude: '%app.gps.geofence.max_longitude%'
         tags: ['app.alert_rule']
 
     App\Domain\Alert\IdleTooLongRule:
+        arguments:
+            $idleSpeedThresholdKmh: '%app.gps.idle_speed_threshold_kmh%'
         tags: ['app.alert_rule']
 
     App\Infrastructure\Persistence\Doctrine\Gps\DoctrineGpsBatchPersister:
