@@ -46,8 +46,8 @@ final class DoctrineGpsBatchPersisterIntegrationTest extends DatabaseTestCase
 
         $persister = new DoctrineGpsBatchPersister($connection, [new SpeedExceededRule(120)]);
 
-        $newestCoordinate = new GpsCoordinate(new VehicleId(FixtureIds::VEHICLE_1), new Latitude(40.2), new Longitude(-3.2), new Speed(90.0), new DeviceTimestamp('2026-01-01T00:00:10+00:00'), new \DateTimeImmutable('2026-01-01T00:00:11+00:00'), 'ext-newest-1', 10.0, 5.0);
-        $olderCoordinate = new GpsCoordinate(new VehicleId(FixtureIds::VEHICLE_1), new Latitude(40.1), new Longitude(-3.1), new Speed(80.0), new DeviceTimestamp('2026-01-01T00:00:01+00:00'), new \DateTimeImmutable('2026-01-01T00:00:12+00:00'), 'ext-older-1', 10.0, 5.0);
+        $newestCoordinate = new GpsCoordinate(new VehicleId(FixtureIds::VEHICLE_1), new Latitude(40.2), new Longitude(-3.2), new Speed(90.0), new DeviceTimestamp('2030-01-01T00:00:10+00:00'), new \DateTimeImmutable('2030-01-01T00:00:11+00:00'), 'ext-newest-1', 10.0, 5.0);
+        $olderCoordinate = new GpsCoordinate(new VehicleId(FixtureIds::VEHICLE_1), new Latitude(40.1), new Longitude(-3.1), new Speed(80.0), new DeviceTimestamp('2030-01-01T00:00:01+00:00'), new \DateTimeImmutable('2030-01-01T00:00:12+00:00'), 'ext-older-1', 10.0, 5.0);
 
         $persister->persist([$newestCoordinate]);
         $persister->persist([$olderCoordinate]);
@@ -59,7 +59,7 @@ final class DoctrineGpsBatchPersisterIntegrationTest extends DatabaseTestCase
         self::assertNotFalse($lastPosition);
         self::assertSame(40.2, (float) $lastPosition['latitude']);
         self::assertSame(-3.2, (float) $lastPosition['longitude']);
-        self::assertSame('2026-01-01 00:00:10+00', (string) $lastPosition['device_timestamp']);
+        self::assertSame('2030-01-01 00:00:10+00', (string) $lastPosition['device_timestamp']);
     }
 
     public function testMultipleCoordinatesUpdateVehicleLastPositionsForEachVehicle(): void
