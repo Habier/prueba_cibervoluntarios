@@ -165,6 +165,8 @@ Si no se definen explícitamente, Symfony usa defaults seguros declarados en `co
 
 ## Mejoras Futuras
 
+<!-- Improvement point: definir una política explícita para `vehicleId` desconocidos (rechazo observable, DLQ o cuarentena) para evitar pérdidas silenciosas y facilitar la operación. -->
+
 - Añadir Outbox Pattern para fiabilidad de eventos internos.
 - Añadir reglas de geofence y desviación de ruta.
 - Mover el fan-out de alertas a una cola dedicada cuando el volumen de alertas crezca.

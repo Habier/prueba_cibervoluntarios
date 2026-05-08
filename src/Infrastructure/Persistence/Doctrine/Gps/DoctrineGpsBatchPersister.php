@@ -10,6 +10,7 @@ use App\Domain\Alert\AlertRuleInterface;
 use App\Domain\Gps\GpsCoordinate;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInterface
@@ -20,6 +21,7 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
     public function __construct(
         private Connection $connection,
         private iterable $alertRules,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -41,6 +43,8 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
             static fn (GpsCoordinate $coordinate): bool => in_array((string) $coordinate->vehicleId, $knownVehicleIds, true),
         ));
 
+        $this->logUnknownVehicles($coordinates, $knownVehicleIds);
+
         $this->connection->beginTransaction();
 
         try {
@@ -54,6 +58,61 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
             $this->connection->rollBack();
 
             throw $throwable;
+        }
+    }
+
+    /**
+     * @param list<GpsCoordinate> $coordinates
+     * @param list<string> $knownVehicleIds
+     */
+    private function logUnknownVehicles(array $coordinates, array $knownVehicleIds): void
+    {
+        if ($coordinates === []) {
+            return;
+        }
+
+        $knownLookup = array_fill_keys($knownVehicleIds, true);
+        $unknownByVehicle = [];
+
+        foreach ($coordinates as $coordinate) {
+            $vehicleId = (string) $coordinate->vehicleId;
+
+            if (isset($knownLookup[$vehicleId])) {
+                continue;
+            }
+
+            $unknownByVehicle[$vehicleId] ??= [
+                'count' => 0,
+                'external_ids' => [],
+                'latest_device_timestamp' => null,
+            ];
+
+            ++$unknownByVehicle[$vehicleId]['count'];
+            if ($coordinate->externalId !== null) {
+                $unknownByVehicle[$vehicleId]['external_ids'][$coordinate->externalId] = true;
+            }
+
+            $deviceTimestamp = $coordinate->deviceTimestamp->value->format(DATE_ATOM);
+            if ($unknownByVehicle[$vehicleId]['latest_device_timestamp'] === null || $deviceTimestamp > $unknownByVehicle[$vehicleId]['latest_device_timestamp']) {
+                $unknownByVehicle[$vehicleId]['latest_device_timestamp'] = $deviceTimestamp;
+            }
+        }
+
+        if ($unknownByVehicle === []) {
+            return;
+        }
+
+        foreach ($unknownByVehicle as $vehicleId => $details) {
+            $this->logger->warning('Unknown vehicle GPS coordinate ignored.', [
+                'event' => 'gps.unknown_vehicle_detected',
+                'vehicle_id' => $vehicleId,
+                'external_ids' => array_keys($details['external_ids']),
+                'device_timestamp' => $details['latest_device_timestamp'],
+                'unknown_count_for_vehicle' => $details['count'],
+                'unknown_count_in_batch' => array_sum(array_column($unknownByVehicle, 'count')),
+                'batch_size' => count($coordinates),
+                'known_vehicle_count_in_batch' => count($knownVehicleIds),
+            ]);
         }
     }
 
