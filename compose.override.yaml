@@ -1,5 +1,17 @@
 
 services:
+  app:
+    volumes:
+      - ./:/app
+
+  worker-gps:
+    volumes:
+      - ./:/app
+
+  worker-alerts:
+    volumes:
+      - ./:/app
+
 ###> doctrine/doctrine-bundle ###
   database:
     ports:

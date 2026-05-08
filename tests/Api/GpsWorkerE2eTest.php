@@ -219,12 +219,12 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
 
     private function resetInMemoryPublisherIfAvailable(ContainerInterface $container): void
     {
-        if (!$container->has(InMemoryGpsMessagePublisher::class)) {
+        if (! $container->has(InMemoryGpsMessagePublisher::class)) {
             return;
         }
 
         $publisher = $container->get(InMemoryGpsMessagePublisher::class);
-        if (!$publisher instanceof InMemoryGpsMessagePublisher) {
+        if (! $publisher instanceof InMemoryGpsMessagePublisher) {
             return;
         }
 
@@ -233,12 +233,12 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
 
     private function inMemoryPublisherMessageCount(ContainerInterface $container): int
     {
-        if (!$container->has(InMemoryGpsMessagePublisher::class)) {
+        if (! $container->has(InMemoryGpsMessagePublisher::class)) {
             return 0;
         }
 
         $publisher = $container->get(InMemoryGpsMessagePublisher::class);
-        if (!$publisher instanceof InMemoryGpsMessagePublisher) {
+        if (! $publisher instanceof InMemoryGpsMessagePublisher) {
             return 0;
         }
 
