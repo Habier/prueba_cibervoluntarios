@@ -7,6 +7,7 @@ namespace App\Infrastructure\ApiPlatform\Provider;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
 use App\Infrastructure\Persistence\Doctrine\ReadModel\CatalogReadRepository;
+use App\Infrastructure\Persistence\Doctrine\ReadModel\VehicleCoordinatesCriteria;
 
 /** @implements ProviderInterface<\App\Api\Output\VehicleCoordinateOutput> */
 final readonly class VehicleCoordinatesProvider implements ProviderInterface
@@ -21,6 +22,9 @@ final readonly class VehicleCoordinatesProvider implements ProviderInterface
      */
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): array
     {
-        return $this->repository->vehicleCoordinates((string) $uriVariables['id']);
+        return $this->repository->vehicleCoordinates(
+            (string) $uriVariables['id'],
+            VehicleCoordinatesCriteria::fromFilters((array) ($context['filters'] ?? [])),
+        );
     }
 }

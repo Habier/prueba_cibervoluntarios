@@ -89,6 +89,7 @@ services:
     App\Application\Port\GpsMessagePublisherInterface: '@App\Infrastructure\Messaging\RabbitMq\RabbitMqGpsMessagePublisher'
     App\Application\Port\DlqPublisherInterface: '@App\Infrastructure\Messaging\RabbitMq\RabbitMqDlqPublisher'
     App\Application\Port\GpsBatchPersisterInterface: '@App\Infrastructure\Persistence\Doctrine\Gps\DoctrineGpsBatchPersister'
+    App\Application\Port\VehicleCatalogInterface: '@App\Infrastructure\Persistence\Doctrine\Gps\DoctrineVehicleCatalog'
 
     App\Domain\Alert\SpeedExceededRule:
         arguments:

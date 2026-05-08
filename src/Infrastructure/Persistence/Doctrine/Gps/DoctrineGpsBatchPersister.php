@@ -8,9 +8,7 @@ use App\Application\Port\GpsBatchPersisterInterface;
 use App\Domain\Alert\AlertContext;
 use App\Domain\Alert\AlertRuleInterface;
 use App\Domain\Gps\GpsCoordinate;
-use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInterface
@@ -21,7 +19,6 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
     public function __construct(
         private Connection $connection,
         private iterable $alertRules,
-        private LoggerInterface $logger,
     ) {
     }
 
@@ -31,24 +28,10 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
             return new GpsBatchPersistenceResult([]);
         }
 
-        $vehicleIds = array_values(array_unique(array_map(static fn (GpsCoordinate $coordinate): string => (string) $coordinate->vehicleId, $coordinates)));
-        $knownVehicleIds = $this->connection->fetchFirstColumn(
-            'SELECT id FROM vehicles WHERE id IN (?)',
-            [$vehicleIds],
-            [ArrayParameterType::STRING],
-        );
-
-        $validCoordinates = array_values(array_filter(
-            $coordinates,
-            static fn (GpsCoordinate $coordinate): bool => in_array((string) $coordinate->vehicleId, $knownVehicleIds, true),
-        ));
-
-        $this->logUnknownVehicles($coordinates, $knownVehicleIds);
-
         $this->connection->beginTransaction();
 
         try {
-            $insertedCoordinates = $this->insertCoordinates($validCoordinates);
+            $insertedCoordinates = $this->insertCoordinates($coordinates);
             $this->upsertLastPositions($insertedCoordinates);
             $this->insertAlerts($insertedCoordinates);
             $this->connection->commit();
@@ -58,61 +41,6 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
             $this->connection->rollBack();
 
             throw $throwable;
-        }
-    }
-
-    /**
-     * @param list<GpsCoordinate> $coordinates
-     * @param list<string>        $knownVehicleIds
-     */
-    private function logUnknownVehicles(array $coordinates, array $knownVehicleIds): void
-    {
-        if ($coordinates === []) {
-            return;
-        }
-
-        $knownLookup = array_fill_keys($knownVehicleIds, true);
-        $unknownByVehicle = [];
-
-        foreach ($coordinates as $coordinate) {
-            $vehicleId = (string) $coordinate->vehicleId;
-
-            if (isset($knownLookup[$vehicleId])) {
-                continue;
-            }
-
-            $unknownByVehicle[$vehicleId] ??= [
-                'count' => 0,
-                'external_ids' => [],
-                'latest_device_timestamp' => null,
-            ];
-
-            ++$unknownByVehicle[$vehicleId]['count'];
-            if ($coordinate->externalId !== null) {
-                $unknownByVehicle[$vehicleId]['external_ids'][$coordinate->externalId] = true;
-            }
-
-            $deviceTimestamp = $coordinate->deviceTimestamp->value->format(DATE_ATOM);
-            if ($unknownByVehicle[$vehicleId]['latest_device_timestamp'] === null || $deviceTimestamp > $unknownByVehicle[$vehicleId]['latest_device_timestamp']) {
-                $unknownByVehicle[$vehicleId]['latest_device_timestamp'] = $deviceTimestamp;
-            }
-        }
-
-        if ($unknownByVehicle === []) {
-            return;
-        }
-
-        foreach ($unknownByVehicle as $vehicleId => $details) {
-            $this->logger->warning('Unknown vehicle GPS coordinate ignored.', [
-                'event' => 'gps.unknown_vehicle_detected',
-                'vehicle_id' => $vehicleId,
-                'external_ids' => array_keys($details['external_ids']),
-                'device_timestamp' => $details['latest_device_timestamp'],
-                'unknown_count_for_vehicle' => $details['count'],
-                'unknown_count_in_batch' => array_sum(array_column($unknownByVehicle, 'count')),
-                'batch_size' => count($coordinates),
-                'known_vehicle_count_in_batch' => count($knownVehicleIds),
-            ]);
         }
     }
 
@@ -201,24 +129,32 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
      */
     private function upsertLastPositions(array $coordinates): void
     {
-        foreach ($coordinates as $index => $coordinate) {
-            $this->connection->executeStatement(
-                'INSERT INTO vehicle_last_positions (vehicle_id, latitude, longitude, altitude, speed_kmh, accuracy, device_timestamp, received_at, updated_at) VALUES (:vehicleId, :latitude, :longitude, :altitude, :speedKmh, :accuracy, :deviceTimestamp, :receivedAt, :updatedAt)
-                ON CONFLICT (vehicle_id) DO UPDATE SET latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude, altitude = EXCLUDED.altitude, speed_kmh = EXCLUDED.speed_kmh, accuracy = EXCLUDED.accuracy, device_timestamp = EXCLUDED.device_timestamp, received_at = EXCLUDED.received_at, updated_at = EXCLUDED.updated_at
-                WHERE EXCLUDED.device_timestamp >= vehicle_last_positions.device_timestamp',
-                [
-                    'vehicleId' => (string) $coordinate->vehicleId,
-                    'latitude' => $coordinate->latitude->value,
-                    'longitude' => $coordinate->longitude->value,
-                    'altitude' => $coordinate->altitude,
-                    'speedKmh' => $coordinate->speedKmh->value,
-                    'accuracy' => $coordinate->accuracy,
-                    'deviceTimestamp' => $coordinate->deviceTimestamp->value->format('Y-m-d H:i:sP'),
-                    'receivedAt' => $coordinate->receivedAt->format('Y-m-d H:i:sP'),
-                    'updatedAt' => $coordinate->receivedAt->format('Y-m-d H:i:sP'),
-                ],
-            );
+        if ($coordinates === []) {
+            return;
         }
+
+        $values = [];
+        $parameters = [];
+
+        foreach ($coordinates as $index => $coordinate) {
+            $values[] = sprintf('(:vehicleId_%1$d, :latitude_%1$d, :longitude_%1$d, :altitude_%1$d, :speedKmh_%1$d, :accuracy_%1$d, :deviceTimestamp_%1$d, :receivedAt_%1$d, :updatedAt_%1$d)', $index);
+            $parameters[sprintf('vehicleId_%d', $index)] = (string) $coordinate->vehicleId;
+            $parameters[sprintf('latitude_%d', $index)] = $coordinate->latitude->value;
+            $parameters[sprintf('longitude_%d', $index)] = $coordinate->longitude->value;
+            $parameters[sprintf('altitude_%d', $index)] = $coordinate->altitude;
+            $parameters[sprintf('speedKmh_%d', $index)] = $coordinate->speedKmh->value;
+            $parameters[sprintf('accuracy_%d', $index)] = $coordinate->accuracy;
+            $parameters[sprintf('deviceTimestamp_%d', $index)] = $coordinate->deviceTimestamp->value->format('Y-m-d H:i:sP');
+            $parameters[sprintf('receivedAt_%d', $index)] = $coordinate->receivedAt->format('Y-m-d H:i:sP');
+            $parameters[sprintf('updatedAt_%d', $index)] = $coordinate->receivedAt->format('Y-m-d H:i:sP');
+        }
+
+        $this->connection->executeStatement(sprintf(
+            'INSERT INTO vehicle_last_positions (vehicle_id, latitude, longitude, altitude, speed_kmh, accuracy, device_timestamp, received_at, updated_at) VALUES %s
+            ON CONFLICT (vehicle_id) DO UPDATE SET latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude, altitude = EXCLUDED.altitude, speed_kmh = EXCLUDED.speed_kmh, accuracy = EXCLUDED.accuracy, device_timestamp = EXCLUDED.device_timestamp, received_at = EXCLUDED.received_at, updated_at = EXCLUDED.updated_at
+            WHERE EXCLUDED.device_timestamp >= vehicle_last_positions.device_timestamp',
+            implode(', ', $values),
+        ), $parameters);
     }
 
     /**
@@ -231,6 +167,9 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
         }
 
         $alertTypeIds = $this->connection->fetchAllKeyValue('SELECT code, id FROM alert_types');
+        $values = [];
+        $parameters = [];
+        $alertIndex = 0;
 
         foreach ($coordinates as $coordinate) {
             foreach ($this->alertRules as $rule) {
@@ -240,15 +179,24 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
                     continue;
                 }
 
-                $this->connection->insert('alerts', [
-                    'id' => Uuid::v7()->toRfc4122(),
-                    'vehicle_id' => (string) $coordinate->vehicleId,
-                    'alert_type_id' => $alertTypeIds[$alert->alertTypeCode],
-                    'message' => $alert->message,
-                    'severity' => $alert->severity->value,
-                    'created_at' => $coordinate->receivedAt->format('Y-m-d H:i:sP'),
-                ]);
+                $values[] = sprintf('(:id_%1$d, :vehicleId_%1$d, :alertTypeId_%1$d, :message_%1$d, :severity_%1$d, :createdAt_%1$d)', $alertIndex);
+                $parameters[sprintf('id_%d', $alertIndex)] = Uuid::v7()->toRfc4122();
+                $parameters[sprintf('vehicleId_%d', $alertIndex)] = (string) $coordinate->vehicleId;
+                $parameters[sprintf('alertTypeId_%d', $alertIndex)] = $alertTypeIds[$alert->alertTypeCode];
+                $parameters[sprintf('message_%d', $alertIndex)] = $alert->message;
+                $parameters[sprintf('severity_%d', $alertIndex)] = $alert->severity->value;
+                $parameters[sprintf('createdAt_%d', $alertIndex)] = $coordinate->receivedAt->format('Y-m-d H:i:sP');
+                ++$alertIndex;
             }
         }
+
+        if ($values === []) {
+            return;
+        }
+
+        $this->connection->executeStatement(
+            sprintf('INSERT INTO alerts (id, vehicle_id, alert_type_id, message, severity, created_at) VALUES %s', implode(', ', $values)),
+            $parameters,
+        );
     }
 }

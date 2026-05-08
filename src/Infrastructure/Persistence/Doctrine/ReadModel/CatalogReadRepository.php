@@ -10,13 +10,11 @@ use App\Api\Output\LastPositionOutput;
 use App\Api\Output\VehicleCoordinateOutput;
 use App\Api\Output\VehicleOutput;
 use Doctrine\DBAL\Connection;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 final readonly class CatalogReadRepository
 {
     public function __construct(
         private Connection $connection,
-        private RequestStack $requestStack,
     ) {
     }
 
@@ -63,29 +61,24 @@ final readonly class CatalogReadRepository
     /**
      * @return list<VehicleCoordinateOutput>
      */
-    public function vehicleCoordinates(string $vehicleId): array
+    public function vehicleCoordinates(string $vehicleId, VehicleCoordinatesCriteria $criteria): array
     {
-        $request = $this->requestStack->getCurrentRequest();
-        $limit = max(1, min((int) ($request?->query->get('limit', 50) ?? 50), 500));
-        $from = $request?->query->get('from');
-        $to = $request?->query->get('to');
-
         $sql = 'SELECT external_id, latitude, longitude, altitude, speed_kmh, accuracy, device_timestamp, received_at FROM gps_coordinates WHERE vehicle_id = :vehicleId';
         $parameters = [
             'vehicleId' => $vehicleId,
         ];
 
-        if (is_string($from) && $from !== '') {
+        if ($criteria->from !== null) {
             $sql .= ' AND device_timestamp >= :from';
-            $parameters['from'] = $from;
+            $parameters['from'] = $criteria->from;
         }
 
-        if (is_string($to) && $to !== '') {
+        if ($criteria->to !== null) {
             $sql .= ' AND device_timestamp <= :to';
-            $parameters['to'] = $to;
+            $parameters['to'] = $criteria->to;
         }
 
-        $sql .= ' ORDER BY device_timestamp DESC LIMIT ' . $limit;
+        $sql .= ' ORDER BY device_timestamp DESC LIMIT ' . $criteria->limit;
 
         $rows = $this->connection->fetchAllAssociative($sql, $parameters);
 

@@ -6,7 +6,9 @@ namespace App\Application\Service;
 
 use App\Application\Command\IngestGpsCoordinateBatchCommand;
 use App\Application\Config\GpsIngestionConfig;
+use App\Application\Exception\UnknownVehicleIdsException;
 use App\Application\Port\GpsMessagePublisherInterface;
+use App\Application\Port\VehicleCatalogInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
@@ -14,6 +16,7 @@ final readonly class IngestGpsCoordinateBatchHandler
 {
     public function __construct(
         private GpsMessagePublisherInterface $publisher,
+        private VehicleCatalogInterface $vehicleCatalog,
         private GpsIngestionConfig $config,
         private LoggerInterface $logger,
     ) {
@@ -31,6 +34,20 @@ final readonly class IngestGpsCoordinateBatchHandler
         $futureTimestamps = 0;
         $now = new \DateTimeImmutable();
         $payloads = [];
+        $vehicleIds = array_values(array_unique(array_map(
+            static fn ($coordinate): string => (string) $coordinate->vehicleId,
+            $command->coordinates,
+        )));
+        $knownVehicleIds = $this->vehicleCatalog->findKnownVehicleIds($vehicleIds);
+        $knownLookup = array_fill_keys($knownVehicleIds, true);
+        $unknownVehicleIds = array_values(array_filter(
+            $vehicleIds,
+            static fn (string $vehicleId): bool => ! isset($knownLookup[$vehicleId]),
+        ));
+
+        if ($unknownVehicleIds !== []) {
+            throw new UnknownVehicleIdsException($unknownVehicleIds);
+        }
 
         foreach ($command->coordinates as $coordinate) {
             if (new \DateTimeImmutable($coordinate->deviceTimestamp) > $now) {

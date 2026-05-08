@@ -143,6 +143,7 @@ El worker crítico de GPS no usa Symfony Messenger. Usa `php-amqplib` directamen
 - `accuracy >= 0` cuando se proporciona
 - `vehicleId` debe ser UUID
 - `deviceTimestamp` debe ser válido
+- `vehicleId` debe existir en el catálogo de vehículos (si no existe, la API rechaza el request con `400`, no publica en RabbitMQ y devuelve un error estable con `type = https://api-platform.com/errors/unknown-vehicle-id` y `detail` con los `vehicleId` desconocidos)
 
 Se aceptan timestamps de dispositivo futuros. La API devuelve una advertencia y registra contexto estructurado.
 
@@ -203,7 +204,7 @@ Si no se definen explícitamente, Symfony usa defaults seguros declarados en `co
 
 - El worker de alertas es actualmente un placeholder porque la generación de alertas ocurre dentro de la transacción de GPS.
 - La política de reintentos depende de la reentrega del broker en lugar de colas de reintento con retardo.
-- Falta definir una política explícita para `vehicleId` desconocidos (rechazo observable, DLQ o cuarentena) para evitar pérdidas silenciosas y facilitar la operación.
+- `vehicleId` desconocido se rechaza en la ingesta HTTP (400) antes de publicar en RabbitMQ.
 
 ## Mejoras Futuras
 
