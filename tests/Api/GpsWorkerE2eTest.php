@@ -46,12 +46,12 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
         $totalCoordinates = 300;
         $coordinatesPerRequest = 20;
         $requestCount = (int) ceil($totalCoordinates / $coordinatesPerRequest);
-        
+
         // Track expected alerts by type
         $expectedSpeedExceededAlerts = 0;
         $expectedGeofenceBreachAlerts = 0;
         $expectedIdleAlerts = 0;
-        
+
         try {
             for ($requestIndex = 0; $requestIndex < $requestCount; ++$requestIndex) {
                 $payload = [
@@ -60,7 +60,7 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
 
                 for ($coordinateIndex = 0; $coordinateIndex < $coordinatesPerRequest && (($requestIndex * $coordinatesPerRequest) + $coordinateIndex) < $totalCoordinates; ++$coordinateIndex) {
                     $sequence = ($requestIndex * $coordinatesPerRequest) + $coordinateIndex;
-                    
+
                     // Distribute 300 coords across three alert scenarios:
                     // 0-99: Speed exceeded (sequence % 100 < 50 triggers alert)
                     // 100-199: Geofence breach (sequence % 100 between 50-99 triggers alert)
@@ -118,18 +118,18 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
 
             // Verify all coordinates were processed
             self::assertSame($initialGpsCount + $totalCoordinates, (int) $connection->fetchOne('SELECT COUNT(*) FROM gps_coordinates'));
-            
+
             // Verify alert counts by type
             $finalAlertCount = (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts');
             $speedExceededCount = (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts a JOIN alert_types t ON t.id = a.alert_type_id WHERE t.code = ?', ['SPEED_EXCEEDED']);
             $geofenceCount = (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts a JOIN alert_types t ON t.id = a.alert_type_id WHERE t.code = ?', ['GEOFENCE_BREACH']);
             $idleCount = (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts a JOIN alert_types t ON t.id = a.alert_type_id WHERE t.code = ?', ['IDLE_TOO_LONG']);
-            
+
             // Assert we have at least one of each alert type
             self::assertGreaterThanOrEqual($expectedSpeedExceededAlerts, $speedExceededCount, 'Should have speed exceeded alerts');
             self::assertGreaterThan(0, $geofenceCount, 'Should have geofence breach alerts');
             self::assertGreaterThan(0, $idleCount, 'Should have idle alerts');
-            
+
             // Verify queue is empty
             self::assertSame(0, $this->countQueueMessages($container, $this->rabbitMqConfig($container)->queue));
             self::assertSame(0, $this->countQueueMessages($container, $this->rabbitMqConfig($container)->dlqQueue));
