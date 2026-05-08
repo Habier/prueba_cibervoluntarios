@@ -30,17 +30,8 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
     #[WithoutErrorHandler]
     public function testWorkerConsumesHundredsOfRealisticCoordinatesFromRabbitMq(): void
     {
-        // This test validates the full asynchronous ingestion path with real
-        // infrastructure boundaries (publish -> queue -> consume -> persist), not
-        // just domain logic in isolation.
-        //
-        // Why this matters:
-        // - It proves that HTTP-side publication effectively reaches RabbitMQ.
-        // - It proves that worker consumption persists coordinates and generates alerts.
-        // - It proves queues are drained after processing (no hidden backlog).
-        //
-        // It intentionally resolves RabbitMQ services directly and uses a fresh
-        // publisher instance to avoid accidentally passing through in-memory test doubles.
+        // End-to-end async contract: publish -> queue -> consume -> persist,
+        // using real RabbitMQ services (not in-memory doubles).
         static::createClient();
         $container = static::getContainer();
         $this->purgeQueues($container);
@@ -58,7 +49,7 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
         $coordinatesPerRequest = 20;
         $requestCount = (int) ceil($totalCoordinates / $coordinatesPerRequest);
 
-        // Track expected alerts by type
+        // Expected alerts by type
         $expectedSpeedExceededAlerts = 0;
         $expectedGeofenceBreachAlerts = 0;
         $expectedIdleAlerts = 0;
@@ -72,31 +63,24 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
                 for ($coordinateIndex = 0; $coordinateIndex < $coordinatesPerRequest && (($requestIndex * $coordinatesPerRequest) + $coordinateIndex) < $totalCoordinates; ++$coordinateIndex) {
                     $sequence = ($requestIndex * $coordinatesPerRequest) + $coordinateIndex;
 
-                    // Distribute 300 coords across three alert scenarios:
-                    // 0-99: Speed exceeded (sequence % 100 < 50 triggers alert)
-                    // 100-199: Geofence breach (sequence % 100 between 50-99 triggers alert)
-                    // 200-299: Idle (sequence % 100 between 0-49 triggers alert via low speed)
-                    $scenario = intdiv($sequence, 100); // Which 100-block are we in
+                    // 0-99 speed, 100-199 geofence, 200-299 idle.
+                    $scenario = intdiv($sequence, 100);
                     $speedKmh = 78.0;
                     $latitude = 40.4168 + (($sequence % 10) * 0.001);
                     $longitude = -3.7038 - (($sequence % 10) * 0.001);
 
-                    // Generate different scenarios
                     if ($scenario === 0) {
-                        // Scenario 1: Speed exceeded
                         $speedKmh = ($sequence % 50) === 0 ? 132.0 : 88.0 + ($sequence % 12);
                         if ($speedKmh > 120) {
                             ++$expectedSpeedExceededAlerts;
                         }
                     } elseif ($scenario === 1) {
-                        // Scenario 2: Geofence breach (coordinates outside predefined bounds)
-                        // Use Madrid bounds: min_lat 40.3, max_lat 40.5, min_lon -3.8, max_lon -3.5
-                        // So use coordinates outside this range
-                        $latitude = 40.2 + (($sequence % 10) * 0.001); // Below minimum
+                        // Force out-of-bounds latitude for geofence alerts.
+                        $latitude = 40.2 + (($sequence % 10) * 0.001);
                         ++$expectedGeofenceBreachAlerts;
                     } else {
-                        // Scenario 3: Idle (very low speed)
-                        $speedKmh = 0.1 + (($sequence % 5) * 0.08); // All below 0.5 km/h threshold
+                        // Keep speed below idle threshold (0.5 km/h).
+                        $speedKmh = 0.1 + (($sequence % 5) * 0.08);
                         ++$expectedIdleAlerts;
                     }
 
@@ -128,21 +112,17 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
 
             $consumer->consume(maxIdleTimeouts: 3);
 
-            // Verify all coordinates were processed
             self::assertSame($initialGpsCount + $totalCoordinates, (int) $connection->fetchOne('SELECT COUNT(*) FROM gps_coordinates'));
 
-            // Verify alert counts by type
             $finalAlertCount = (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts');
             $speedExceededCount = (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts a JOIN alert_types t ON t.id = a.alert_type_id WHERE t.code = ?', ['SPEED_EXCEEDED']);
             $geofenceCount = (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts a JOIN alert_types t ON t.id = a.alert_type_id WHERE t.code = ?', ['GEOFENCE_BREACH']);
             $idleCount = (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts a JOIN alert_types t ON t.id = a.alert_type_id WHERE t.code = ?', ['IDLE_TOO_LONG']);
 
-            // Assert we have at least one of each alert type
             self::assertGreaterThanOrEqual($expectedSpeedExceededAlerts, $speedExceededCount, 'Should have speed exceeded alerts');
             self::assertGreaterThan(0, $geofenceCount, 'Should have geofence breach alerts');
             self::assertGreaterThan(0, $idleCount, 'Should have idle alerts');
 
-            // Verify queue is empty
             self::assertSame(0, $this->countQueueMessages($container, $this->rabbitMqConfig($container)->queue));
             self::assertSame(0, $this->countQueueMessages($container, $this->rabbitMqConfig($container)->dlqQueue));
         } finally {

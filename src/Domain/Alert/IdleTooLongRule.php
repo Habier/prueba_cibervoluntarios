@@ -13,7 +13,6 @@ final readonly class IdleTooLongRule implements AlertRuleInterface
 
     public function evaluate(AlertContext $context): ?AlertDraft
     {
-        // If vehicle is nearly stationary (speed < threshold), it may be idle
         if ($context->coordinate->speedKmh->value < $this->idleSpeedThresholdKmh) {
             return new AlertDraft(
                 $context->coordinate->vehicleId,

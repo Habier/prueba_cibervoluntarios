@@ -19,7 +19,6 @@ final readonly class GeofenceBreachRule implements AlertRuleInterface
         $lat = $context->coordinate->latitude->value;
         $lon = $context->coordinate->longitude->value;
 
-        // Check if coordinate is outside the geofence
         if ($lat < $this->minLatitude
             || $lat > $this->maxLatitude
             || $lon < $this->minLongitude
