@@ -17,7 +17,7 @@ final readonly class RabbitMqConnectionFactory
     {
         return new AMQPStreamConnection(
             $this->config->host,
-            (string) $this->config->port,
+            $this->config->port,
             $this->config->user,
             $this->config->password,
             $this->config->vhost,

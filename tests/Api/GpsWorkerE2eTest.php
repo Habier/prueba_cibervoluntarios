@@ -202,7 +202,9 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
     {
         $connection = $this->rabbitMqConnectionFactory($container)->create();
         $channel = $connection->channel();
-        [, $messageCount] = $channel->queue_declare($queue, true, true, false, false);
+        /** @var array{0:string,1:int} $result */
+        $result = $channel->queue_declare($queue, true, true, false, false);
+        [, $messageCount] = $result;
         $channel->close();
         $connection->close();
 

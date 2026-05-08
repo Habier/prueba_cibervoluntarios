@@ -42,12 +42,12 @@ final readonly class GpsMessageConsumer
                     static function () use ($message): void {
                         /** @var array{channel:\PhpAmqpLib\Channel\AMQPChannel,delivery_tag:int} $deliveryInfo */
                         $deliveryInfo = $message->delivery_info;
-                        $deliveryInfo['channel']->basic_ack((string) $deliveryInfo['delivery_tag']);
+                        $deliveryInfo['channel']->basic_ack($deliveryInfo['delivery_tag']);
                     },
                     static function (bool $requeue) use ($message): void {
                         /** @var array{channel:\PhpAmqpLib\Channel\AMQPChannel,delivery_tag:int} $deliveryInfo */
                         $deliveryInfo = $message->delivery_info;
-                        $deliveryInfo['channel']->basic_reject((string) $deliveryInfo['delivery_tag'], $requeue);
+                        $deliveryInfo['channel']->basic_reject($deliveryInfo['delivery_tag'], $requeue);
                     },
                 ));
             },
