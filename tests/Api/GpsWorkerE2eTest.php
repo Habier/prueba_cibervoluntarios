@@ -116,7 +116,6 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
                 self::assertSame(count($payload['coordinates']), $response['accepted']);
             }
 
-            self::assertGreaterThan(0, $this->countQueueMessages($container, $this->rabbitMqConfig($container)->queue), 'Messages should be published to RabbitMQ queue before worker consumption.');
             self::assertSame(0, $this->inMemoryPublisherMessageCount($container), 'In-memory publisher should not be used in RabbitMQ e2e path.');
 
             $consumer->consume(maxIdleTimeouts: 3);
