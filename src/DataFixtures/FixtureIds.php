@@ -15,6 +15,7 @@ final class FixtureIds
 
     public const string ALERT_TYPE_SPEED = '66666666-6666-4666-8666-666666666666';
     public const string ALERT_TYPE_GEOFENCE = '77777777-7777-4777-8777-777777777777';
+    public const string ALERT_TYPE_IDLE = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbc';
 
     public const string VEHICLE_1 = '88888888-8888-4888-8888-888888888888';
     public const string VEHICLE_2 = '99999999-9999-4999-8999-999999999999';

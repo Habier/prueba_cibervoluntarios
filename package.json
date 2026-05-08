@@ -1,0 +1,15 @@
+{
+  "name": "prueba-cibervoluntarios",
+  "version": "1.0.0",
+  "description": "GPS Logistics System - Symfony + RabbitMQ",
+  "type": "module",
+  "scripts": {
+    "test:system": "node tests/System/GpsWorkerSystemTest.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

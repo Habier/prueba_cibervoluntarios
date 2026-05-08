@@ -48,6 +48,7 @@ final class AppFixtures extends Fixture
 
         $speedExceeded = $this->alertType(FixtureIds::ALERT_TYPE_SPEED, 'SPEED_EXCEEDED', 'Speed Exceeded', AlertSeverity::HIGH, $now);
         $geofenceBreach = $this->alertType(FixtureIds::ALERT_TYPE_GEOFENCE, 'GEOFENCE_BREACH', 'Geofence Breach', AlertSeverity::MEDIUM, $now);
+        $idleTooLong = $this->alertType(FixtureIds::ALERT_TYPE_IDLE, 'IDLE_TOO_LONG', 'Idle Too Long', AlertSeverity::LOW, $now);
 
         $vehicleAlpha = $this->vehicle(FixtureIds::VEHICLE_1, 'AAA-111', $truck, $fleetNorth, VehicleStatus::ACTIVE, $now);
         $vehicleBeta = $this->vehicle(FixtureIds::VEHICLE_2, 'BBB-222', $van, $fleetSouth, VehicleStatus::ACTIVE, $now);
@@ -83,7 +84,7 @@ final class AppFixtures extends Fixture
         $alert->severity = AlertSeverity::HIGH;
         $alert->createdAt = $now;
 
-        foreach ([$fleetNorth, $fleetSouth, $truck, $van, $electricVan, $speedExceeded, $geofenceBreach, $vehicleAlpha, $vehicleBeta, $vehicleGamma, $lastPositionAlpha, $lastPositionBeta, $alert] as $record) {
+        foreach ([$fleetNorth, $fleetSouth, $truck, $van, $electricVan, $speedExceeded, $geofenceBreach, $idleTooLong, $vehicleAlpha, $vehicleBeta, $vehicleGamma, $lastPositionAlpha, $lastPositionBeta, $alert] as $record) {
             $manager->persist($record);
         }
 

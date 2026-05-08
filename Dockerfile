@@ -20,6 +20,7 @@ COPY composer.json composer.lock symfony.lock ./
 RUN composer install --no-interaction --prefer-dist --no-scripts
 
 COPY . /app
+COPY Caddyfile /etc/caddy/Caddyfile
 
 RUN composer dump-autoload --optimize
 

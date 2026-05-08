@@ -171,9 +171,7 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
             return;
         }
 
-        $alertTypeIds = $this->connection->fetchAllKeyValue('SELECT code, id FROM alert_types WHERE code IN (?)', [[
-            'SPEED_EXCEEDED',
-        ]], [ArrayParameterType::STRING]);
+        $alertTypeIds = $this->connection->fetchAllKeyValue('SELECT code, id FROM alert_types');
 
         foreach ($coordinates as $coordinate) {
             foreach ($this->alertRules as $rule) {
