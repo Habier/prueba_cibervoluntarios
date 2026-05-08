@@ -36,7 +36,10 @@ services:
       context: .
     command: php bin/console app:gps:consume
     healthcheck:
-      disable: true
+      test: ["CMD", "php", "-r", "exit(str_contains(file_get_contents('/proc/1/cmdline'), 'app:gps:consume') ? 0 : 1);"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     environment:
       APP_ENV: dev
       APP_SECRET: dev-secret
@@ -62,7 +65,10 @@ services:
       context: .
     command: php bin/console app:alerts:consume
     healthcheck:
-      disable: true
+      test: ["CMD", "php", "-r", "exit(str_contains(file_get_contents('/proc/1/cmdline'), 'app:alerts:consume') ? 0 : 1);"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     environment:
       APP_ENV: dev
       APP_SECRET: dev-secret
@@ -101,6 +107,11 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   database_data:
