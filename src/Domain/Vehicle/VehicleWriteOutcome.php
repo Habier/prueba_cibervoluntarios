@@ -18,10 +18,14 @@ final readonly class VehicleWriteOutcome
         public GpsCoordinate $observation,
         public ?LastKnownPosition $latestPosition,
         public array $alerts,
+        /** @var list<object> */
         public array $events,
     ) {
     }
 
+    /**
+     * @param list<object> $events
+     */
     public static function ignoredAsDuplicate(GpsCoordinate $observation, array $events = []): self
     {
         return new self(false, $observation, null, [], $events);
