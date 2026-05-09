@@ -32,7 +32,7 @@ final readonly class DeviceTimestamp
 
     public function equals(self $other): bool
     {
-        return $this->value == $other->value;
+        return $this->value === $other->value;
     }
 
     public function __toString(): string
