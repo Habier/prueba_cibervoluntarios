@@ -21,7 +21,9 @@ final readonly class AlertTriggeredListener
     {
         $alertTypeId = $this->connection->fetchOne(
             'SELECT id FROM alert_types WHERE code = :code',
-            ['code' => $event->alert->alertTypeCode],
+            [
+                'code' => $event->alert->alertTypeCode,
+            ],
         );
 
         if ($alertTypeId === false) {

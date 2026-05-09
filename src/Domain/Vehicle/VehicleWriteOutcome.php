@@ -18,7 +18,9 @@ final readonly class VehicleWriteOutcome
         public GpsCoordinate $observation,
         public ?LastKnownPosition $latestPosition,
         public array $alerts,
-        /** @var list<object> */
+        /**
+         * @var list<object>
+         */
         public array $events,
     ) {
     }
