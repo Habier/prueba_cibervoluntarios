@@ -63,6 +63,11 @@ He optado por una aproximación DDD, sin tampoco pasarme de la raya por ser una 
 
 Se eligió FrankenPHP por ser el runner PHP con mayor rendimiento. El trade-off aceptado es que es menos conocido y sus logs no son tan buenos como nginx+FPM.
 
+### Pipelines
+Véase [GitHub Actions](https://github.com/Habier/prueba_cibervoluntarios/actions) con lo que ha estado ocurriendo.
+Incluye test de calidad, ECS y PHPstan, lanzamiento de suit PHPUnit y por ultimo un smoke test.
+De esta forma, el código es evaluado en cada entrada a master e independiente a las pruebas que ejecute en local.
+
 ### Ingesta asíncrona con RabbitMQ
 
 La ingesta asíncrona con RabbitMQ desacopla el pico HTTP del ritmo real de persistencia. La desventaja es que la consistencia visible para lectura no es inmediata.
@@ -100,7 +105,8 @@ El worker crítico de GPS no usa Symfony Messenger. Usa `php-amqplib` directamen
 - Publicación en DLQ para mensajes inválidos
 
 ## Por qué un system test
-El comando `composer test:system` hace una prueba desde fuera, que aunque ya está cubierta por PHPUnit, y no la he incluido en CI, me ha sido de ayuda durante el desarrollo a pulir errores de configuración. 
+El comando `composer test:system` hace una prueba desde fuera, que aunque ya está cubierta por PHPUnit, y no la he incluido en CI, me ha sido de ayuda durante el desarrollo a pulir errores de configuración.
+
 
 ## Documentación de la API
 
