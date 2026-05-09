@@ -13,7 +13,7 @@ final readonly class SpeedExceededRule implements AlertRuleInterface
 
     public function evaluate(AlertContext $context): ?AlertDraft
     {
-        if (! $context->coordinate->exceedsSpeedLimit($this->speedLimitKmh)) {
+        if (! $context->coordinate->speedKmh->exceeds($this->speedLimitKmh)) {
             return null;
         }
 

@@ -16,7 +16,11 @@ final readonly class GeofenceBreachRule implements AlertRuleInterface
 
     public function evaluate(AlertContext $context): ?AlertDraft
     {
-        if ($context->coordinate->isWithinGeofence($this->minLatitude, $this->maxLatitude, $this->minLongitude, $this->maxLongitude)) {
+        $lat = $context->coordinate->latitude->getValue();
+        $lon = $context->coordinate->longitude->getValue();
+        $isWithin = $lat >= $this->minLatitude && $lat <= $this->maxLatitude && $lon >= $this->minLongitude && $lon <= $this->maxLongitude;
+
+        if ($isWithin) {
             return null;
         }
 

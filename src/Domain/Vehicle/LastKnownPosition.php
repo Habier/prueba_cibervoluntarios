@@ -2,24 +2,21 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\Gps;
+namespace App\Domain\Vehicle;
 
 use App\Domain\Gps\ValueObject\DeviceTimestamp;
 use App\Domain\Gps\ValueObject\Latitude;
 use App\Domain\Gps\ValueObject\Longitude;
 use App\Domain\Gps\ValueObject\Speed;
-use App\Domain\Vehicle\ValueObject\VehicleId;
 
-final readonly class GpsCoordinate
+final readonly class LastKnownPosition
 {
     public function __construct(
-        public VehicleId $vehicleId,
         public Latitude $latitude,
         public Longitude $longitude,
         public Speed $speedKmh,
         public DeviceTimestamp $deviceTimestamp,
         public \DateTimeImmutable $receivedAt,
-        public ?string $externalId = null,
         public ?float $altitude = null,
         public ?float $accuracy = null,
     ) {

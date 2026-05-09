@@ -42,7 +42,7 @@ abstract class DatabaseTestCase extends WebTestCase
             self::$schemaInitialized = true;
         }
 
-        $connection->executeStatement('TRUNCATE TABLE alerts, vehicle_last_positions, gps_coordinate_ingestion_keys, gps_coordinates, vehicles, fleets, vehicle_types, alert_types RESTART IDENTITY CASCADE');
+        $connection->executeStatement('TRUNCATE TABLE alerts, vehicle_last_positions, gps_coordinate_ingestion_keys, gps_coordinates, vehicles, vehicle_types, alert_types RESTART IDENTITY CASCADE');
 
         $fixtures = new AppFixtures();
         $fixtures->load($entityManager);

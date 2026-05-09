@@ -136,12 +136,24 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
         $databaseHost = $this->detectDatabaseHost();
         $databasePort = $databaseHost === 'database' ? '5432' : '55432';
         $testDatabaseUrl = sprintf('postgresql://app:app@%s:%s/app_test?serverVersion=16&charset=utf8', $databaseHost, $databasePort);
+        $testExchange = 'gps.coordinates.e2e.test';
+        $testQueue = 'gps.coordinates.queue.e2e.test';
+        $testRoutingKey = 'gps.coordinates.ingest.e2e.test';
+        $testDlqExchange = 'gps.coordinates.dlq.e2e.test';
+        $testDlqQueue = 'gps.coordinates.queue.dlq.e2e.test';
+        $testDlqRoutingKey = 'gps.coordinates.dlq.e2e.test';
 
         putenv(sprintf('RABBITMQ_HOST=%s', $rabbitMqHost));
         putenv('RABBITMQ_PORT=5672');
         putenv('RABBITMQ_USER=guest');
         putenv('RABBITMQ_PASSWORD=guest');
         putenv('RABBITMQ_VHOST=/');
+        putenv(sprintf('RABBITMQ_GPS_EXCHANGE=%s', $testExchange));
+        putenv(sprintf('RABBITMQ_GPS_QUEUE=%s', $testQueue));
+        putenv(sprintf('RABBITMQ_GPS_ROUTING_KEY=%s', $testRoutingKey));
+        putenv(sprintf('RABBITMQ_GPS_DLQ_EXCHANGE=%s', $testDlqExchange));
+        putenv(sprintf('RABBITMQ_GPS_DLQ_QUEUE=%s', $testDlqQueue));
+        putenv(sprintf('RABBITMQ_GPS_DLQ_ROUTING_KEY=%s', $testDlqRoutingKey));
         putenv(sprintf('TEST_DATABASE_URL=%s', $testDatabaseUrl));
 
         $_SERVER['RABBITMQ_HOST'] = $rabbitMqHost;
@@ -154,6 +166,18 @@ final class GpsWorkerE2eTest extends DatabaseTestCase
         $_ENV['RABBITMQ_PASSWORD'] = 'guest';
         $_SERVER['RABBITMQ_VHOST'] = '/';
         $_ENV['RABBITMQ_VHOST'] = '/';
+        $_SERVER['RABBITMQ_GPS_EXCHANGE'] = $testExchange;
+        $_ENV['RABBITMQ_GPS_EXCHANGE'] = $testExchange;
+        $_SERVER['RABBITMQ_GPS_QUEUE'] = $testQueue;
+        $_ENV['RABBITMQ_GPS_QUEUE'] = $testQueue;
+        $_SERVER['RABBITMQ_GPS_ROUTING_KEY'] = $testRoutingKey;
+        $_ENV['RABBITMQ_GPS_ROUTING_KEY'] = $testRoutingKey;
+        $_SERVER['RABBITMQ_GPS_DLQ_EXCHANGE'] = $testDlqExchange;
+        $_ENV['RABBITMQ_GPS_DLQ_EXCHANGE'] = $testDlqExchange;
+        $_SERVER['RABBITMQ_GPS_DLQ_QUEUE'] = $testDlqQueue;
+        $_ENV['RABBITMQ_GPS_DLQ_QUEUE'] = $testDlqQueue;
+        $_SERVER['RABBITMQ_GPS_DLQ_ROUTING_KEY'] = $testDlqRoutingKey;
+        $_ENV['RABBITMQ_GPS_DLQ_ROUTING_KEY'] = $testDlqRoutingKey;
         $_SERVER['TEST_DATABASE_URL'] = $testDatabaseUrl;
         $_ENV['TEST_DATABASE_URL'] = $testDatabaseUrl;
     }

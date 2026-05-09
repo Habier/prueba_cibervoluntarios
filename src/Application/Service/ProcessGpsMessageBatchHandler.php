@@ -5,19 +5,27 @@ declare(strict_types=1);
 namespace App\Application\Service;
 
 use App\Application\Port\DlqPublisherInterface;
-use App\Application\Port\GpsBatchPersisterInterface;
+use App\Application\Port\DomainEventDispatcherInterface;
+use App\Application\Port\ObservationIdempotencyPortInterface;
+use App\Application\Port\VehicleWriteRepositoryInterface;
+use App\Domain\Alert\AlertEvaluationPolicyInterface;
 use App\Domain\Gps\GpsCoordinate;
 use App\Domain\Gps\ValueObject\DeviceTimestamp;
 use App\Domain\Gps\ValueObject\Latitude;
 use App\Domain\Gps\ValueObject\Longitude;
 use App\Domain\Gps\ValueObject\Speed;
+use App\Domain\Vehicle\LatestPositionPolicyInterface;
 use App\Domain\Vehicle\ValueObject\VehicleId;
 use App\Infrastructure\Worker\BufferedGpsMessage;
 
 class ProcessGpsMessageBatchHandler
 {
     public function __construct(
-        private GpsBatchPersisterInterface $persister,
+        private ObservationIdempotencyPortInterface $idempotencyPort,
+        private VehicleWriteRepositoryInterface $vehicleWriteRepository,
+        private AlertEvaluationPolicyInterface $alertPolicy,
+        private LatestPositionPolicyInterface $latestPositionPolicy,
+        private DomainEventDispatcherInterface $domainEventDispatcher,
         private DlqPublisherInterface $dlqPublisher,
     ) {
     }
@@ -57,7 +65,13 @@ class ProcessGpsMessageBatchHandler
 
         if ($coordinates !== []) {
             $start = microtime(true);
-            $this->persister->persist($coordinates);
+            foreach ($coordinates as $coordinate) {
+                $accepted = $this->idempotencyPort->claim($coordinate);
+                $vehicle = $this->vehicleWriteRepository->loadForUpdate($coordinate->vehicleId);
+                $outcome = $vehicle->recordObservation($coordinate, $accepted, $this->alertPolicy, $this->latestPositionPolicy);
+                $this->vehicleWriteRepository->save($outcome);
+                $this->domainEventDispatcher->dispatch($outcome->events);
+            }
             $insertDurationMs = (microtime(true) - $start) * 1000;
         }
 

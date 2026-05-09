@@ -30,4 +30,7 @@ class VehicleRecord
 
     #[ORM\Column]
     public \DateTimeImmutable $updatedAt;
+
+    #[ORM\OneToOne(mappedBy: 'vehicle', targetEntity: VehicleLastPositionRecord::class)]
+    public ?VehicleLastPositionRecord $lastPosition = null;
 }

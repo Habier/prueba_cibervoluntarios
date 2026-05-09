@@ -91,8 +91,14 @@ services:
 
     App\Application\Port\GpsMessagePublisherInterface: '@App\Infrastructure\Messaging\RabbitMq\RabbitMqGpsMessagePublisher'
     App\Application\Port\DlqPublisherInterface: '@App\Infrastructure\Messaging\RabbitMq\RabbitMqDlqPublisher'
-    App\Application\Port\GpsBatchPersisterInterface: '@App\Infrastructure\Persistence\Doctrine\Gps\DoctrineGpsBatchPersister'
+    App\Application\Port\ObservationIdempotencyPortInterface: '@App\Infrastructure\Persistence\Doctrine\Gps\DoctrineGpsBatchPersister'
+    App\Application\Port\VehicleWriteRepositoryInterface: '@App\Infrastructure\Persistence\Doctrine\Gps\DoctrineGpsBatchPersister'
+    App\Application\Port\DomainEventDispatcherInterface: '@App\Infrastructure\Messaging\Symfony\SymfonyDomainEventDispatcher'
     App\Application\Port\VehicleCatalogInterface: '@App\Infrastructure\Cache\CachedVehicleCatalog'
+
+    App\Domain\Alert\AlertEvaluationPolicyInterface: '@App\Domain\Alert\RuleBasedAlertEvaluationPolicy'
+    App\Domain\Vehicle\LatestPositionPolicyInterface: '@App\Domain\Vehicle\LatestPositionByDeviceTimestampPolicy'
+    App\Domain\Vehicle\LatestPositionByDeviceTimestampPolicy: ~
 
     App\Infrastructure\Cache\CachedVehicleCatalog:
         arguments:
@@ -120,6 +126,10 @@ services:
         tags: ['app.alert_rule']
 
     App\Infrastructure\Persistence\Doctrine\Gps\DoctrineGpsBatchPersister:
+        arguments:
+            $alertRules: !tagged_iterator app.alert_rule
+
+    App\Domain\Alert\RuleBasedAlertEvaluationPolicy:
         arguments:
             $alertRules: !tagged_iterator app.alert_rule
 

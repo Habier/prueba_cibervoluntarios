@@ -13,7 +13,7 @@ final readonly class IdleTooLongRule implements AlertRuleInterface
 
     public function evaluate(AlertContext $context): ?AlertDraft
     {
-        if (! $context->coordinate->isIdle($this->idleSpeedThresholdKmh)) {
+        if (! $context->coordinate->speedKmh->isIdle($this->idleSpeedThresholdKmh)) {
             return null;
         }
 

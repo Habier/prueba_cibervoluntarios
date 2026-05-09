@@ -6,12 +6,21 @@ namespace App\Infrastructure\Persistence\Doctrine\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
-#[ORM\Table(name: 'vehicle_last_positions')]
-class VehicleLastPositionRecord
+#[ORM\Entity(readOnly: true)]
+#[ORM\Table(name: 'gps_coordinates')]
+class GpsCoordinateRecord
 {
     #[ORM\Id]
-    #[ORM\OneToOne(targetEntity: VehicleRecord::class, inversedBy: 'lastPosition')]
+    #[ORM\Column(type: 'guid')]
+    public string $id;
+
+    #[ORM\Column]
+    public \DateTimeImmutable $deviceTimestamp;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    public ?string $externalId = null;
+
+    #[ORM\ManyToOne(targetEntity: VehicleRecord::class)]
     #[ORM\JoinColumn(name: 'vehicle_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     public VehicleRecord $vehicle;
 
@@ -31,11 +40,5 @@ class VehicleLastPositionRecord
     public ?float $accuracy = null;
 
     #[ORM\Column]
-    public \DateTimeImmutable $deviceTimestamp;
-
-    #[ORM\Column]
     public \DateTimeImmutable $receivedAt;
-
-    #[ORM\Column]
-    public \DateTimeImmutable $updatedAt;
 }

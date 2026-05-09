@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Infrastructure\Health;
 
 use App\Infrastructure\Messaging\RabbitMq\RabbitMqConnectionFactory;
-use Doctrine\DBAL\Connection;
+use App\Infrastructure\Persistence\Doctrine\Entity\VehicleRecord;
+use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class DependencyReadinessChecker
 {
     public function __construct(
-        private Connection $connection,
+        private EntityManagerInterface $entityManager,
         private RabbitMqConnectionFactory $connectionFactory,
     ) {
     }
@@ -24,7 +25,12 @@ final readonly class DependencyReadinessChecker
         $rabbitMq = false;
 
         try {
-            $this->connection->fetchOne('SELECT 1');
+            $this->entityManager->createQueryBuilder()
+                ->select('v.id')
+                ->from(VehicleRecord::class, 'v')
+                ->setMaxResults(1)
+                ->getQuery()
+                ->getScalarResult();
             $postgresql = true;
         } catch (\Throwable) {
         }
