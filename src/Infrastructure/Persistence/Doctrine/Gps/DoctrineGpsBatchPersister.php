@@ -69,9 +69,9 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
             $dedupParameters[sprintf('dedupCoordinateId_%d', $index)] = $coordinateId;
             $dedupParameters[sprintf('dedupVehicleId_%d', $index)] = (string) $coordinate->vehicleId;
             $dedupParameters[sprintf('dedupExternalId_%d', $index)] = $coordinate->externalId;
-            $dedupParameters[sprintf('dedupDeviceTimestamp_%d', $index)] = $coordinate->deviceTimestamp->value->format('Y-m-d H:i:sP');
-            $dedupParameters[sprintf('dedupLatitude_%d', $index)] = $coordinate->latitude->value;
-            $dedupParameters[sprintf('dedupLongitude_%d', $index)] = $coordinate->longitude->value;
+            $dedupParameters[sprintf('dedupDeviceTimestamp_%d', $index)] = $coordinate->deviceTimestamp->getValue()->format('Y-m-d H:i:sP');
+            $dedupParameters[sprintf('dedupLatitude_%d', $index)] = $coordinate->latitude->getValue();
+            $dedupParameters[sprintf('dedupLongitude_%d', $index)] = $coordinate->longitude->getValue();
         }
 
         $acceptedCoordinateIds = $this->connection->fetchFirstColumn(
@@ -92,12 +92,12 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
             $parameters[sprintf('id_%d', $index)] = (string) $acceptedCoordinateId;
             $parameters[sprintf('externalId_%d', $index)] = $coordinate->externalId;
             $parameters[sprintf('vehicleId_%d', $index)] = (string) $coordinate->vehicleId;
-            $parameters[sprintf('latitude_%d', $index)] = $coordinate->latitude->value;
-            $parameters[sprintf('longitude_%d', $index)] = $coordinate->longitude->value;
+            $parameters[sprintf('latitude_%d', $index)] = $coordinate->latitude->getValue();
+            $parameters[sprintf('longitude_%d', $index)] = $coordinate->longitude->getValue();
             $parameters[sprintf('altitude_%d', $index)] = $coordinate->altitude;
-            $parameters[sprintf('speedKmh_%d', $index)] = $coordinate->speedKmh->value;
+            $parameters[sprintf('speedKmh_%d', $index)] = $coordinate->speedKmh->getValue();
             $parameters[sprintf('accuracy_%d', $index)] = $coordinate->accuracy;
-            $parameters[sprintf('deviceTimestamp_%d', $index)] = $coordinate->deviceTimestamp->value->format('Y-m-d H:i:sP');
+            $parameters[sprintf('deviceTimestamp_%d', $index)] = $coordinate->deviceTimestamp->getValue()->format('Y-m-d H:i:sP');
             $parameters[sprintf('receivedAt_%d', $index)] = $coordinate->receivedAt->format('Y-m-d H:i:sP');
         }
 
@@ -139,12 +139,12 @@ final readonly class DoctrineGpsBatchPersister implements GpsBatchPersisterInter
         foreach ($coordinates as $index => $coordinate) {
             $values[] = sprintf('(:vehicleId_%1$d, :latitude_%1$d, :longitude_%1$d, :altitude_%1$d, :speedKmh_%1$d, :accuracy_%1$d, :deviceTimestamp_%1$d, :receivedAt_%1$d, :updatedAt_%1$d)', $index);
             $parameters[sprintf('vehicleId_%d', $index)] = (string) $coordinate->vehicleId;
-            $parameters[sprintf('latitude_%d', $index)] = $coordinate->latitude->value;
-            $parameters[sprintf('longitude_%d', $index)] = $coordinate->longitude->value;
+            $parameters[sprintf('latitude_%d', $index)] = $coordinate->latitude->getValue();
+            $parameters[sprintf('longitude_%d', $index)] = $coordinate->longitude->getValue();
             $parameters[sprintf('altitude_%d', $index)] = $coordinate->altitude;
-            $parameters[sprintf('speedKmh_%d', $index)] = $coordinate->speedKmh->value;
+            $parameters[sprintf('speedKmh_%d', $index)] = $coordinate->speedKmh->getValue();
             $parameters[sprintf('accuracy_%d', $index)] = $coordinate->accuracy;
-            $parameters[sprintf('deviceTimestamp_%d', $index)] = $coordinate->deviceTimestamp->value->format('Y-m-d H:i:sP');
+            $parameters[sprintf('deviceTimestamp_%d', $index)] = $coordinate->deviceTimestamp->getValue()->format('Y-m-d H:i:sP');
             $parameters[sprintf('receivedAt_%d', $index)] = $coordinate->receivedAt->format('Y-m-d H:i:sP');
             $parameters[sprintf('updatedAt_%d', $index)] = $coordinate->receivedAt->format('Y-m-d H:i:sP');
         }

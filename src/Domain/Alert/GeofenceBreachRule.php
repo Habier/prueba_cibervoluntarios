@@ -16,21 +16,15 @@ final readonly class GeofenceBreachRule implements AlertRuleInterface
 
     public function evaluate(AlertContext $context): ?AlertDraft
     {
-        $lat = $context->coordinate->latitude->value;
-        $lon = $context->coordinate->longitude->value;
-
-        if ($lat < $this->minLatitude
-            || $lat > $this->maxLatitude
-            || $lon < $this->minLongitude
-            || $lon > $this->maxLongitude) {
-            return new AlertDraft(
-                $context->coordinate->vehicleId,
-                'GEOFENCE_BREACH',
-                sprintf('Vehicle left authorized area: (%.4f, %.4f)', $lat, $lon),
-                AlertSeverity::MEDIUM,
-            );
+        if ($context->coordinate->isWithinGeofence($this->minLatitude, $this->maxLatitude, $this->minLongitude, $this->maxLongitude)) {
+            return null;
         }
 
-        return null;
+        return new AlertDraft(
+            $context->coordinate->vehicleId,
+            'GEOFENCE_BREACH',
+            sprintf('Vehicle left authorized area: (%.4f, %.4f)', $context->coordinate->latitude->getValue(), $context->coordinate->longitude->getValue()),
+            AlertSeverity::MEDIUM,
+        );
     }
 }

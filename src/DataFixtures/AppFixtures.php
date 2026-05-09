@@ -8,7 +8,6 @@ use App\Domain\Alert\AlertSeverity;
 use App\Domain\Vehicle\VehicleStatus;
 use App\Infrastructure\Persistence\Doctrine\Entity\AlertRecord;
 use App\Infrastructure\Persistence\Doctrine\Entity\AlertTypeRecord;
-use App\Infrastructure\Persistence\Doctrine\Entity\FleetRecord;
 use App\Infrastructure\Persistence\Doctrine\Entity\VehicleLastPositionRecord;
 use App\Infrastructure\Persistence\Doctrine\Entity\VehicleRecord;
 use App\Infrastructure\Persistence\Doctrine\Entity\VehicleTypeRecord;
@@ -26,22 +25,6 @@ final class AppFixtures extends Fixture
 
         $now = new \DateTimeImmutable('2026-01-01T12:00:00+00:00');
 
-        $fleetNorth = new FleetRecord();
-        $fleetNorth->id = FixtureIds::FLEET_NORTH;
-        $fleetNorth->name = 'Northern Operations';
-        $fleetNorth->clientName = 'Acme Logistics';
-        $fleetNorth->description = 'Cross-border cold-chain fleet';
-        $fleetNorth->createdAt = $now;
-        $fleetNorth->updatedAt = $now;
-
-        $fleetSouth = new FleetRecord();
-        $fleetSouth->id = FixtureIds::FLEET_SOUTH;
-        $fleetSouth->name = 'Southern Operations';
-        $fleetSouth->clientName = 'Beta Distribution';
-        $fleetSouth->description = 'Urban delivery operations';
-        $fleetSouth->createdAt = $now;
-        $fleetSouth->updatedAt = $now;
-
         $truck = $this->vehicleType(FixtureIds::VEHICLE_TYPE_TRUCK, 'TRUCK', 'Truck', $now);
         $van = $this->vehicleType(FixtureIds::VEHICLE_TYPE_VAN, 'VAN', 'Van', $now);
         $electricVan = $this->vehicleType(FixtureIds::VEHICLE_TYPE_ELECTRIC_VAN, 'ELECTRIC_VAN', 'Electric Van', $now);
@@ -50,9 +33,9 @@ final class AppFixtures extends Fixture
         $geofenceBreach = $this->alertType(FixtureIds::ALERT_TYPE_GEOFENCE, 'GEOFENCE_BREACH', 'Geofence Breach', AlertSeverity::MEDIUM, $now);
         $idleTooLong = $this->alertType(FixtureIds::ALERT_TYPE_IDLE, 'IDLE_TOO_LONG', 'Idle Too Long', AlertSeverity::LOW, $now);
 
-        $vehicleAlpha = $this->vehicle(FixtureIds::VEHICLE_1, 'AAA-111', $truck, $fleetNorth, VehicleStatus::ACTIVE, $now);
-        $vehicleBeta = $this->vehicle(FixtureIds::VEHICLE_2, 'BBB-222', $van, $fleetSouth, VehicleStatus::ACTIVE, $now);
-        $vehicleGamma = $this->vehicle(FixtureIds::VEHICLE_3, 'CCC-333', $electricVan, null, VehicleStatus::INACTIVE, $now);
+        $vehicleAlpha = $this->vehicle(FixtureIds::VEHICLE_1, 'AAA-111', $truck, VehicleStatus::ACTIVE, $now);
+        $vehicleBeta = $this->vehicle(FixtureIds::VEHICLE_2, 'BBB-222', $van, VehicleStatus::ACTIVE, $now);
+        $vehicleGamma = $this->vehicle(FixtureIds::VEHICLE_3, 'CCC-333', $electricVan, VehicleStatus::INACTIVE, $now);
 
         $lastPositionAlpha = new VehicleLastPositionRecord();
         $lastPositionAlpha->vehicle = $vehicleAlpha;
@@ -84,7 +67,7 @@ final class AppFixtures extends Fixture
         $alert->severity = AlertSeverity::HIGH;
         $alert->createdAt = $now;
 
-        foreach ([$fleetNorth, $fleetSouth, $truck, $van, $electricVan, $speedExceeded, $geofenceBreach, $idleTooLong, $vehicleAlpha, $vehicleBeta, $vehicleGamma, $lastPositionAlpha, $lastPositionBeta, $alert] as $record) {
+        foreach ([$truck, $van, $electricVan, $speedExceeded, $geofenceBreach, $idleTooLong, $vehicleAlpha, $vehicleBeta, $vehicleGamma, $lastPositionAlpha, $lastPositionBeta, $alert] as $record) {
             $manager->persist($record);
         }
 
@@ -146,13 +129,12 @@ final class AppFixtures extends Fixture
         return $record;
     }
 
-    private function vehicle(string $id, string $plate, VehicleTypeRecord $type, ?FleetRecord $fleet, VehicleStatus $status, \DateTimeImmutable $now): VehicleRecord
+    private function vehicle(string $id, string $plate, VehicleTypeRecord $type, VehicleStatus $status, \DateTimeImmutable $now): VehicleRecord
     {
         $record = new VehicleRecord();
         $record->id = $id;
         $record->plate = $plate;
         $record->vehicleType = $type;
-        $record->fleet = $fleet;
         $record->status = $status;
         $record->createdAt = $now;
         $record->updatedAt = $now;

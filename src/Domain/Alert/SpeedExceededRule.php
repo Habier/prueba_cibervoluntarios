@@ -20,7 +20,7 @@ final readonly class SpeedExceededRule implements AlertRuleInterface
         return new AlertDraft(
             $context->coordinate->vehicleId,
             'SPEED_EXCEEDED',
-            sprintf('Vehicle exceeded speed limit: %.2f km/h', $context->coordinate->speedKmh->value),
+            sprintf('Vehicle exceeded speed limit: %.2f km/h', $context->coordinate->speedKmh->getValue()),
             AlertSeverity::HIGH,
         );
     }

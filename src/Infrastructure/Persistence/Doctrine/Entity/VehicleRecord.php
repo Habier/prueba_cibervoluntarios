@@ -25,10 +25,6 @@ class VehicleRecord
     #[ORM\Column(enumType: VehicleStatus::class)]
     public VehicleStatus $status;
 
-    #[ORM\ManyToOne(targetEntity: FleetRecord::class)]
-    #[ORM\JoinColumn(name: 'fleet_id', referencedColumnName: 'id', nullable: true)]
-    public ?FleetRecord $fleet = null;
-
     #[ORM\Column]
     public \DateTimeImmutable $createdAt;
 

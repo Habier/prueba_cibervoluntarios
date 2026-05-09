@@ -13,15 +13,15 @@ final readonly class IdleTooLongRule implements AlertRuleInterface
 
     public function evaluate(AlertContext $context): ?AlertDraft
     {
-        if ($context->coordinate->speedKmh->value < $this->idleSpeedThresholdKmh) {
-            return new AlertDraft(
-                $context->coordinate->vehicleId,
-                'IDLE_TOO_LONG',
-                sprintf('Vehicle is idle: speed %.2f km/h', $context->coordinate->speedKmh->value),
-                AlertSeverity::LOW,
-            );
+        if (! $context->coordinate->isIdle($this->idleSpeedThresholdKmh)) {
+            return null;
         }
 
-        return null;
+        return new AlertDraft(
+            $context->coordinate->vehicleId,
+            'IDLE_TOO_LONG',
+            sprintf('Vehicle is idle: speed %.2f km/h', $context->coordinate->speedKmh->getValue()),
+            AlertSeverity::LOW,
+        );
     }
 }

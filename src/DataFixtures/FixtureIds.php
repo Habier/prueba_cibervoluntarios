@@ -6,9 +6,6 @@ namespace App\DataFixtures;
 
 final class FixtureIds
 {
-    public const string FLEET_NORTH = '11111111-1111-4111-8111-111111111111';
-    public const string FLEET_SOUTH = '22222222-2222-4222-8222-222222222222';
-
     public const string VEHICLE_TYPE_TRUCK = '33333333-3333-4333-8333-333333333333';
     public const string VEHICLE_TYPE_VAN = '44444444-4444-4444-8444-444444444444';
     public const string VEHICLE_TYPE_ELECTRIC_VAN = '55555555-5555-4555-8555-555555555555';

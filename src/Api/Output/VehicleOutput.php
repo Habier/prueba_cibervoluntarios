@@ -22,7 +22,6 @@ final readonly class VehicleOutput
 {
     /**
      * @param array{id:string,code:string,name:string} $vehicleType
-     * @param array{id:string,name:string}|null        $fleet
      */
     public function __construct(
         #[ApiProperty(
@@ -45,11 +44,6 @@ final readonly class VehicleOutput
             example: '{"id": "type-123", "code": "AMB", "name": "Ambulance"}',
         )]
         public array $vehicleType,
-        #[ApiProperty(
-            description: 'Fleet information if the vehicle belongs to a fleet',
-            example: '{"id": "fleet-123", "name": "Emergency Response Fleet"}',
-        )]
-        public ?array $fleet,
         #[ApiProperty(
             description: 'Last known GPS position of the vehicle',
         )]

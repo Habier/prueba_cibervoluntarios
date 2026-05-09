@@ -27,6 +27,19 @@ final readonly class GpsCoordinate
 
     public function exceedsSpeedLimit(float $speedLimitKmh): bool
     {
-        return $this->speedKmh->value > $speedLimitKmh;
+        return $this->speedKmh->exceeds($speedLimitKmh);
+    }
+
+    public function isWithinGeofence(float $minLatitude, float $maxLatitude, float $minLongitude, float $maxLongitude): bool
+    {
+        $lat = $this->latitude->getValue();
+        $lon = $this->longitude->getValue();
+
+        return $lat >= $minLatitude && $lat <= $maxLatitude && $lon >= $minLongitude && $lon <= $maxLongitude;
+    }
+
+    public function isIdle(float $idleSpeedThreshold = 5.0): bool
+    {
+        return $this->speedKmh->isIdle($idleSpeedThreshold);
     }
 }

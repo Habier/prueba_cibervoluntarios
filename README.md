@@ -355,6 +355,17 @@ Si no se definen explícitamente, Symfony usa defaults seguros declarados en `co
 - La política de reintentos depende de la reentrega del broker en lugar de colas de reintento con retardo.
 - `vehicleId` desconocido se rechaza en la ingesta HTTP (400) antes de publicar en RabbitMQ.
 
+## Alcance del ejercicio
+
+Este proyecto está preparado para ser evaluado como ejercicio técnico con foco en:
+
+- arquitectura orientada a ingesta asíncrona
+- durabilidad e idempotencia
+- separación de responsabilidades entre HTTP, broker, workers y lectura
+- decisiones técnicas explicadas y cubiertas con tests relevantes
+
+No afirma, por sí solo, soporte probado de 25.000 rps en producción sin una validación específica de carga en un entorno equivalente al real.
+
 ## Mejoras Futuras
 
 - Añadir Outbox Pattern para fiabilidad de eventos internos.
