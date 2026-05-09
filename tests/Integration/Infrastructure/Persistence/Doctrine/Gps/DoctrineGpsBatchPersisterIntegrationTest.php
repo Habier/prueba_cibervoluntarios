@@ -34,7 +34,7 @@ final class DoctrineGpsBatchPersisterIntegrationTest extends DatabaseTestCase
         $persister->persist([$coordinate]);
 
         self::assertSame($initialGpsCount + 1, (int) $connection->fetchOne('SELECT COUNT(*) FROM gps_coordinates'));
-        self::assertSame($initialAlertCount + 1, (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts'));
+        self::assertSame($initialAlertCount, (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts'));
     }
 
     public function testOlderDeviceTimestampDoesNotOverrideLastPosition(): void
@@ -88,7 +88,7 @@ final class DoctrineGpsBatchPersisterIntegrationTest extends DatabaseTestCase
         self::assertSame(42.0, (float) $rows[1]['latitude']);
     }
 
-    public function testMultipleAlertsInOneBatchAreInserted(): void
+    public function testMultipleCoordinatesInOneBatchDoNotPersistAlertsDirectly(): void
     {
         $client = static::createClient();
         /** @var EntityManagerInterface $entityManager */
@@ -103,10 +103,10 @@ final class DoctrineGpsBatchPersisterIntegrationTest extends DatabaseTestCase
             new GpsCoordinate(new VehicleId(FixtureIds::VEHICLE_2), new Latitude(40.1), new Longitude(-3.1), new Speed(140.0), new DeviceTimestamp('2026-01-03T00:00:12+00:00'), new \DateTimeImmutable('2026-01-03T00:00:13+00:00'), 'alert-2', 10.0, 5.0),
         ]);
 
-        self::assertSame($initialAlertCount + 2, (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts'));
+        self::assertSame($initialAlertCount, (int) $connection->fetchOne('SELECT COUNT(*) FROM alerts'));
     }
 
-    public function testNoAlertsAreInsertedWhenNoRuleMatches(): void
+    public function testNoAlertsAreInsertedByPersisterWhenNoRuleMatches(): void
     {
         $client = static::createClient();
         /** @var EntityManagerInterface $entityManager */

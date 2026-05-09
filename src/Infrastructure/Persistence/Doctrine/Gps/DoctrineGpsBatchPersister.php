@@ -148,24 +148,6 @@ final readonly class DoctrineGpsBatchPersister implements ObservationIdempotency
                 );
             }
 
-            if ($outcome->alerts !== []) {
-                $alertTypeIds = $this->connection->fetchAllKeyValue('SELECT code, id FROM alert_types');
-                foreach ($outcome->alerts as $alert) {
-                    if (! isset($alertTypeIds[$alert->alertTypeCode])) {
-                        continue;
-                    }
-
-                    $this->connection->insert('alerts', [
-                        'id' => Uuid::v7()->toRfc4122(),
-                        'vehicle_id' => (string) $coordinate->vehicleId,
-                        'alert_type_id' => $alertTypeIds[$alert->alertTypeCode],
-                        'message' => $alert->message,
-                        'severity' => $alert->severity->value,
-                        'created_at' => $coordinate->receivedAt->format('Y-m-d H:i:sP'),
-                    ]);
-                }
-            }
-
             $this->connection->commit();
         } catch (\Throwable $throwable) {
             if ($this->connection->isTransactionActive()) {
