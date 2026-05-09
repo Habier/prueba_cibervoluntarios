@@ -8,72 +8,6 @@ servers:
     url: http://localhost:8081
     description: 'Local development server'
 paths:
-  /api/fleets:
-    get:
-      operationId: api_fleets_get_collection
-      tags:
-        - FleetOutput
-      responses:
-        '200':
-          description: 'FleetOutput collection'
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FleetOutput'
-      summary: 'Retrieves the collection of FleetOutput resources.'
-      description: 'Retrieves the collection of FleetOutput resources.'
-      parameters:
-        -
-          name: page
-          in: query
-          description: 'The collection page number'
-          required: false
-          deprecated: false
-          schema:
-            type: integer
-            default: 1
-          style: form
-          explode: true
-  '/api/fleets/{id}/vehicles':
-    get:
-      operationId: api_fleets_idvehicles_get_collection
-      tags:
-        - FleetVehicleOutput
-      responses:
-        '200':
-          description: 'FleetVehicleOutput collection'
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FleetVehicleOutput'
-      summary: 'Retrieves the collection of FleetVehicleOutput resources.'
-      description: 'Retrieves the collection of FleetVehicleOutput resources.'
-      parameters:
-        -
-          name: id
-          in: path
-          description: 'FleetVehicleOutput identifier'
-          required: true
-          deprecated: false
-          schema:
-            type: string
-          style: simple
-          explode: false
-        -
-          name: page
-          in: query
-          description: 'The collection page number'
-          required: false
-          deprecated: false
-          schema:
-            type: integer
-            default: 1
-          style: form
-          explode: true
   /api/gps-coordinates:
     post:
       operationId: api_gps-coordinates_post
@@ -408,44 +342,6 @@ components:
           type:
             - string
             - 'null'
-    FleetOutput:
-      type: object
-      description: 'Fleet management endpoints for managing vehicle fleets'
-      properties:
-        id:
-          description: 'Unique identifier of the fleet'
-          example: 123e4567-e89b-12d3-a456-426614174000
-          type: string
-        name:
-          description: 'Name of the fleet'
-          example: 'Emergency Response Fleet'
-          type: string
-        clientName:
-          description: 'Name of the client organization that owns the fleet'
-          example: 'City Fire Department'
-          type: string
-        description:
-          description: 'Optional description of the fleet'
-          example: 'Fleet of emergency response vehicles'
-          type:
-            - string
-            - 'null'
-    FleetVehicleOutput:
-      type: object
-      description: 'Fleet vehicle endpoints for managing vehicles within a specific fleet'
-      properties:
-        id:
-          description: 'Unique identifier of the vehicle'
-          example: 123e4567-e89b-12d3-a456-426614174000
-          type: string
-        plate:
-          description: 'License plate number of the vehicle'
-          example: ABC-1234
-          type: string
-        status:
-          description: 'Current status of the vehicle (e.g., active, inactive, maintenance)'
-          example: active
-          type: string
     GpsCoordinateBatch:
       type: object
       description: 'Endpoint for ingesting GPS coordinate data from vehicles. Accepts batches of GPS coordinates for processing.'
@@ -628,14 +524,6 @@ components:
           type: object
           additionalProperties:
             type: string
-        fleet:
-          description: 'Fleet information if the vehicle belongs to a fleet'
-          example: '{"id": "fleet-123", "name": "Emergency Response Fleet"}'
-          type:
-            - object
-            - 'null'
-          additionalProperties:
-            type: string
         lastPosition:
           anyOf:
             -
@@ -664,12 +552,6 @@ tags:
   -
     name: GpsCoordinateBatch
     description: 'Endpoint for ingesting GPS coordinate data from vehicles. Accepts batches of GPS coordinates for processing.'
-  -
-    name: FleetOutput
-    description: 'Fleet management endpoints for managing vehicle fleets'
-  -
-    name: FleetVehicleOutput
-    description: 'Fleet vehicle endpoints for managing vehicles within a specific fleet'
   -
     name: VehicleCoordinateOutput
     description: 'Vehicle coordinate history endpoints for tracking vehicle movements over time'
