@@ -1,0 +1,7 @@
+framework:
+    cache:
+        default_redis_provider: '%env(default:app.default.redis_cache_provider:string:REDIS_CACHE_PROVIDER)%'
+        pools:
+            vehicle_catalog.cache:
+                adapter: cache.adapter.redis
+                provider: '%env(default:app.default.redis_cache_provider:string:REDIS_CACHE_PROVIDER)%'
